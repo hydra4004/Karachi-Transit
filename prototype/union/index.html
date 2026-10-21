@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Union Operations Portal — Karachi Transit</title>
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="portal.css">
+</head>
+<body class="portal-body">
+
+<div class="portal">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark">KU</span>
+      <div>
+        <div class="b1" id="brandTitle">Union Ops Portal</div>
+        <div class="b2" id="brandSub">Karachi Transit — Phase 2 prototype</div>
+      </div>
+    </div>
+    <nav id="sideNav"></nav>
+    <div class="side-note">
+      <b>How this works</b>
+      <span id="sideNoteBody"></span>
+    </div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1 id="pageTitle">Fleet</h1>
+        <p id="pageSub"></p>
+      </div>
+      <div class="topright">
+        <div><b>Mr. Qureshi</b> — union operator</div>
+        <div class="live-sync"><span class="pulse"></span> Live sync with commuter app</div>
+      </div>
+    </header>
+
+    <section id="viewFleet" class="view"></section>
+    <section id="viewAlerts" class="view"></section>
+    <section id="viewSettings" class="view"></section>
+  </main>
+
+  <aside class="preview">
+    <div class="pv-head">
+      <h3 id="pvTitle">Commuter app preview</h3>
+      <a class="link" id="pvOpen" target="_blank" rel="noopener">Open ↗</a>
+    </div>
+    <div class="pv-frame"><iframe id="pvFrame" src="../commuter/index.html?embed=1" title="Commuter app preview"></iframe></div>
+    <div class="pv-note" id="pvNote"></div>
+    <div class="pv-list" id="pvList"></div>
+  </aside>
+
+</div>
+
+<script src="../shared/data.js"></script>
+<script src="../shared/sim.js"></script>
+<script src="../shared/i18n.js"></script>
+<script src="../shared/assets.js"></script>
+<script src="portal.js"></script>
+</body>
+</html>

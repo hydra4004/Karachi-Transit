@@ -1,0 +1,126 @@
+/* ============================================================================
+ * Karachi Transit App — commuter app specific styles
+ * ==========================================================================*/
+
+/* quick action grid ------------------------------------------------------ */
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.quick {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 60px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); box-shadow: var(--shadow);
+  cursor: pointer; text-align: start; font-size: 13.5px; font-weight: 600;
+}
+.quick .qi {
+  width: 36px; height: 36px; border-radius: 10px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--brand-soft); color: var(--brand-ink);
+}
+.quick.danger { border-color: #f3c4c1; }
+.quick.danger .qi { background: var(--danger-soft); color: var(--danger); }
+.quick.warn .qi { background: var(--warn-soft); color: var(--warn); }
+.quick:active { background: var(--surface-2); }
+
+/* chip rows -------------------------------------------------------------- */
+.chiprow { display: flex; flex-wrap: wrap; gap: 8px; }
+.chiprow .chip { cursor: pointer; }
+.chiprow .chip.on { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-ink); font-weight: 600; }
+.chiprow .chip .x { color: var(--ink-3); }
+
+/* search results --------------------------------------------------------- */
+.result {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); cursor: pointer; text-align: start; margin-bottom: 8px;
+}
+.result .rttl { font-size: 14px; font-weight: 600; }
+.result .rsub { font-size: 12px; color: var(--ink-3); }
+
+/* route cards ------------------------------------------------------------ */
+.routecard {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--surface); cursor: pointer; text-align: start;
+  margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.routecard .rc-main { min-width: 0; flex: 1 1 auto; }
+.routecard .rc-name { font-size: 14px; font-weight: 600; }
+.routecard .rc-sub { font-size: 12px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.routecard .rc-eta { text-align: center; flex: 0 0 auto; }
+.routecard .rc-eta .n { font-size: 17px; font-weight: 700; line-height: 1.1; }
+.routecard .rc-eta .u { font-size: 10.5px; color: var(--ink-3); }
+
+/* map filter chips ------------------------------------------------------- */
+.mapchips {
+  flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; padding: 8px 12px;
+  background: var(--surface); border-top: 1px solid var(--line);
+}
+.mapchips .mc-row { display: flex; align-items: center; gap: 8px; overflow-x: auto; }
+.mapchips .mc-row::-webkit-scrollbar { height: 0; }
+.mapchips .mc-row-type .mc-count {
+  margin-inline-start: auto; white-space: nowrap; font-size: 11.5px; color: var(--ink-3);
+}
+.mapchips .mc-lbl {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3);
+  white-space: nowrap;
+}
+.mapchips .chip { cursor: pointer; white-space: nowrap; }
+.mapchips .mc-row-type .chip.on {
+  background: var(--brand-soft); border-color: var(--brand); color: var(--brand-ink); font-weight: 600;
+}
+.mapchips .mc-route.on {
+  background: var(--mc, var(--brand)); border-color: var(--mc, var(--brand)); color: #fff; font-weight: 600;
+}
+.mapchips .mc-route { border-inline-start: 4px solid var(--mc, var(--brand)); }
+.mapchips .mc-row-focus .chip { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-ink); }
+
+/* stop / route detail lists --------------------------------------------- */
+.stoprow {
+  display: flex; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--line);
+}
+.stoprow:last-child { border-bottom: 0; }
+.stoprow .sdot {
+  width: 14px; height: 14px; border-radius: 50%; flex: 0 0 auto; margin-top: 4px;
+  border: 3px solid var(--brand); background: #fff;
+}
+.stoprow .sdot.informal { border-color: var(--warn); border-radius: 4px; }
+.stoprow .sname { font-size: 14px; font-weight: 600; }
+.stoprow .ssub { font-size: 12px; color: var(--ink-3); }
+.stoprow .seta { font-size: 12px; color: var(--ink-2); text-align: end; flex: 0 0 auto; min-width: 96px; }
+
+.vehiclecard {
+  border: 1px solid var(--line); border-radius: 14px; padding: 12px;
+  background: var(--surface); margin-bottom: 10px;
+}
+
+/* evaluation panel ------------------------------------------------------- */
+#evalPanel { position: absolute; inset: 0; z-index: 70; pointer-events: none; }
+#evalPanel .evalbox {
+  position: absolute; inset-inline: 10px; bottom: 78px;
+  background: rgba(15, 23, 42, .95); color: #fff; border-radius: 14px;
+  padding: 10px; pointer-events: auto; box-shadow: var(--shadow-lg);
+  font-size: 12px;
+}
+#evalPanel .evalbox .row { flex-wrap: wrap; gap: 6px; }
+#evalPanel .evalbox button {
+  border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.1); color: #fff;
+  border-radius: 8px; padding: 6px 9px; font-size: 11.5px; cursor: pointer; min-height: 32px;
+}
+#evalPanel .evalbox button.on { background: #22c55e; border-color: #22c55e; color: #05240f; font-weight: 700; }
+#evalPanel .evalbox .title { font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; }
+#evalPanel .evalbox .hint { opacity: .8; margin-top: 6px; line-height: 1.35; }
+
+/* embed mode (used inside the union portal preview) ------------------------ */
+body.embed .page { padding: 0; display: block; background: #0b1220; }
+body.embed .page-head { display: none; }
+body.embed .device-caption { display: none; }
+body.embed .phone {
+  width: 392px; height: 812px; border-radius: 0; padding: 0; box-shadow: none;
+}
+body.embed .phone-notch { display: none; }
+
+/* utility --------------------------------------------------------------- */
+.eta-badge { display: inline-flex; align-items: center; gap: 5px; }
+.hr { height: 1px; background: var(--line); margin: 10px 0; }
+.pill-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+a.btn { text-decoration: none; }

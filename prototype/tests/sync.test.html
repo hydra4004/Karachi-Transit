@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sync test — union portal to commuter app</title>
+</head>
+<body>
+<pre id="results">running…</pre>
+<iframe id="portal" src="../union/index.html" style="width:1100px;height:700px;border:0"></iframe>
+<iframe id="app" src="../commuter/index.html" style="width:420px;height:900px;border:0"></iframe>
+
+<script>
+var results = [], fails = 0;
+function ok(cond, msg) { results.push((cond ? 'pass  ' : 'FAIL  ') + msg); if (!cond) fails++; flush(); }
+function flush() { document.getElementById('results').textContent = results.join('\n'); }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+var portal, app;
+function pq(s) { return portal.contentDocument.querySelector(s); }
+function pqa(s) { return Array.prototype.slice.call(portal.contentDocument.querySelectorAll(s)); }
+function aq(s) { return app.contentDocument.querySelector(s); }
+function aqa(s) { return Array.prototype.slice.call(app.contentDocument.querySelectorAll(s)); }
+function pclick(el) { el.dispatchEvent(new portal.contentWindow.MouseEvent('click', { bubbles: true })); }
+function aclick(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', { bubbles: true })); }
+
+(async function () {
+  portal = document.getElementById('portal');
+  app = document.getElementById('app');
+  try {
+    await waitFor(function () {
+      return portal.contentDocument && app.contentDocument &&
+        portal.contentDocument.readyState === 'complete' && app.contentDocument.readyState === 'complete' &&
+        portal.contentDocument.querySelector('#viewFleet tbody tr') &&
+        app.contentDocument.querySelector('#tabbar button');
+    });
+    await sleep(800);
+
+  ok(pqa('#viewFleet tbody tr').length === 14, 'portal lists all 14 vehicles');
+  ok(pqa('[data-view="calls"]').length === 0, 'portal has no driver-calls section');
+  ok(pqa('#sideNav [data-view]').length === 3, 'portal nav has three sections: fleet, alerts, settings');
+  ok(!!pq('#sideNoteBody') && pq('#sideNoteBody').textContent.indexOf('phone') !== -1,
+     'portal explains that drivers phone the union');
+
+  /* --- union operator marks a vehicle out of service --- */
+  var row = pqa('#viewFleet tbody tr').filter(function (tr) { return tr.textContent.indexOf('LEB-7788') !== -1; })[0];
+  ok(!!row, 'found the bus to update by hand (LEB-7788)');
+  pclick(row);
+  await sleep(300);
+  ok(!!pq('#publishBtn'), 'vehicle status panel opens');
+
+  pclick(pq('[data-status="out_of_service"]'));
+  await sleep(150);
+  var note = pq('#noteInput');
+  note.value = 'Mechanical breakdown near Federal B Area';
+  note.dispatchEvent(new portal.contentWindow.Event('input', { bubbles: true }));
+  await sleep(100);
+
+  var previewText = portal.contentDocument.querySelectorAll('.preview-note')[0].textContent;
+  ok(previewText.indexOf('out of service') !== -1, 'portal shows the message the commuter will read');
+
+  pclick(pq('#publishBtn'));
+  await sleep(1200);
+
+  /* --- the commuter app must now show the alert --- */
+  var banner = aq('#homeAlerts');
+  ok(!!banner && banner.textContent.length > 10, 'commuter home shows the union alert banner');
+  ok(banner && banner.textContent.indexOf('out of service') !== -1, 'alert text reaches the commuter app');
+  ok(banner && banner.textContent.indexOf('LEB-7788') !== -1, 'alert names the vehicle that is off the road');
+
+  /* the affected vehicle must not be offered as an arrival any more */
+  var stopsWithVehicle = aqa('#homeNearby .eta-card').filter(function (c) { return c.textContent.indexOf('LEB-7788') !== -1; });
+  ok(stopsWithVehicle.length === 0, 'an out-of-service vehicle is no longer listed as an arrival');
+
+  /* alerts screen */
+  var alertBtn = aq('#btnMapAlerts');
+  var tabAlerts = aqa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'home'; })[0];
+  aclick(tabAlerts);
+  await sleep(200);
+  ok(!!aq('#btnMapAlerts'), 'commuter app has an alerts entry point');
+
+  /* driver reassignment, edited by hand in the same panel */
+  var row2 = pqa('#viewFleet tbody tr').filter(function (tr) { return tr.textContent.indexOf('KHI-4455') !== -1; })[0];
+  ok(!!row2, 'found a second vehicle for the driver reassignment check');
+  if (row2) {
+    pclick(row2);
+    await sleep(300);
+    var sel = pq('#driverSelect');
+    ok(!!sel && sel.options.length > 1, 'driver can be reassigned from the vehicle panel');
+    if (sel && sel.options.length > 1) {
+      sel.value = sel.options[1].value;
+      sel.dispatchEvent(new portal.contentWindow.Event('change', { bubbles: true }));
+      await sleep(150);
+      pclick(pq('#publishBtn'));
+      await sleep(900);
+      var drvAlert = aq('#homeAlerts');
+      ok(drvAlert && drvAlert.textContent.indexOf('driver') !== -1,
+         'a hand-made driver change reaches the commuter app');
+    }
+  }
+
+  results.push('');
+  results.push(fails === 0 ? 'ALL PASS' : fails + ' FAILURES');
+  document.title = fails === 0 ? 'PASS' : 'FAIL';
+  flush();
+  } catch (e) {
+    results.push('ERROR  ' + (e && e.message ? e.message : e));
+    results.push('ERROR  ' + (e && e.stack ? e.stack.split('\n')[1] : ''));
+    flush();
+  }
+})();
+
+function waitFor(fn, timeout) {
+  var start = Date.now();
+  var limit = timeout || 8000;
+  return new Promise(function (resolve, reject) {
+    (function poll() {
+      var v;
+      try { v = fn(); } catch (e) { v = false; }
+      if (v) return resolve(true);
+      if (Date.now() - start > limit) return reject(new Error('timeout waiting for the app to load'));
+      setTimeout(poll, 60);
+    })();
+  });
+}
+</script>
+</body>
+</html>

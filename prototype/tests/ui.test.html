@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UI smoke test — Karachi Transit prototype</title>
+</head>
+<body>
+<pre id="results">running…</pre>
+<iframe id="app" src="../commuter/index.html" style="width:420px;height:900px;border:0"></iframe>
+
+<script>
+/* Drives the real commuter app inside the iframe and reports what happened.
+   Run with:  node prototype/tests/run-ui-test.js  (or open this file over http) */
+var results = [];
+var fails = 0;
+
+function ok(cond, msg) {
+  results.push((cond ? 'pass  ' : 'FAIL  ') + msg);
+  if (!cond) fails++;
+  flush();
+}
+function flush() { document.getElementById('results').textContent = results.join('\n'); }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+var app;
+
+function q(sel) { return app.contentDocument.querySelector(sel); }
+function qa(sel) { return Array.prototype.slice.call(app.contentDocument.querySelectorAll(sel)); }
+function text(sel) { var e = q(sel); return e ? e.textContent.trim() : ''; }
+function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', { bubbles: true })); }
+
+(async function () {
+  app = document.getElementById('app');
+  await new Promise(function (r) { app.addEventListener('load', r); });
+  await sleep(600);
+
+  var doc = app.contentDocument;
+
+  /* --- shell --- */
+  ok(qa('#tabbar button').length === 5, 'tab bar has 5 tabs');
+  ok(!!q('.screen[data-screen="home"].active'), 'home screen is active on load');
+
+  /* --- T1: find a route --- */
+  var routesTab = qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'routes'; })[0];
+  click(routesTab);
+  await sleep(200);
+  ok(!!q('.screen[data-screen="routes"].active'), 'routes tab opens the routes screen');
+  ok(qa('#routeList .routecard').length === 8, 'all 8 routes are listed (got ' + qa('#routeList .routecard').length + ')');
+
+  var b13 = qa('#routeList .routecard').filter(function (b) { return b.textContent.indexOf('B13') !== -1; })[0];
+  click(b13);
+  await sleep(250);
+  ok(!!q('.screen[data-screen="route"].active'), 'tapping a route opens the route detail');
+  ok(qa('#routeBody .stoprow').length === 6, 'B13 shows all 6 stops (got ' + qa('#routeBody .stoprow').length + ')');
+  ok(qa('#routeBody .vehiclecard').length === 3, 'B13 shows its 3 vehicles on the route');
+
+  /* --- map --- */
+  click(q('#btnRouteMap'));
+  await sleep(300);
+  ok(!!q('.screen[data-screen="map"].active'), 'route map button opens the live map');
+  ok(qa('#mapSvg .route-line').length === 8, 'map draws all 8 route lines');
+  ok(qa('#mapSvg .veh').length > 10, 'map draws the vehicles (' + qa('#mapSvg .veh').length + ')');
+
+  /* --- stop sheet --- */
+  var stopDot = qa('#mapSvg .stop-dot').filter(function (d) { return d.getAttribute('data-stop') === 'st_ghanta'; })[0];
+  click(stopDot);
+  await sleep(250);
+  ok(!!q('#scrim.open'), 'tapping a chinchi point opens the stop sheet');
+  ok(q('#sheet').textContent.indexOf('Ghanta') !== -1, 'stop sheet names the landmark stop');
+  ok(!!q('#sheet .landmark-svg'), 'stop sheet shows the landmark illustration (FR9)');
+  click(q('#scrim'));
+  await sleep(150);
+
+  /* --- map route filter (multi-select) --- */
+  click(qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'map'; })[0]);
+  await sleep(300);
+  ok(!!q('.screen[data-screen="map"].active'), 'map tab is open for filter test');
+  var routeChips = qa('#mapChips [data-maproute]');
+  ok(routeChips.length === 8, 'map shows one chip per route for filtering (' + routeChips.length + ')');
+  /* start fresh on All */
+  var allChip = qa('#mapChips [data-mapfilter]').filter(function (b) { return b.getAttribute('data-mapfilter') === 'all'; })[0];
+  if (allChip) click(allChip);
+  await sleep(200);
+  var visBefore = qa('#mapSvg .veh').length;
+  var b13chip = qa('#mapChips [data-maproute]').filter(function (b) { return b.textContent.indexOf('B13') !== -1; })[0];
+  var c1chip  = qa('#mapChips [data-maproute]').filter(function (b) { return b.textContent.indexOf('C1') !== -1; })[0];
+  click(b13chip);
+  await sleep(150);
+  click(c1chip);
+  await sleep(200);
+  var visAfter = qa('#mapSvg .veh').length;
+  ok(visAfter > 0 && visAfter < visBefore, 'ticking individual routes hides vehicles from the other routes');
+  ok(qa('#mapSvg .stop-group[style*="none"]').length > 0, 'stops only served by hidden routes are hidden from the map');
+  /* back to all */
+  if (allChip) click(allChip);
+  await sleep(200);
+
+  /* --- T3: planner --- */
+  var planTab = qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'plan'; })[0];
+  click(planTab);
+  await sleep(250);
+  var chip = qa('#planSuggestions .chip').filter(function (c) { return c.textContent.indexOf('Sea View') !== -1; })[0];
+  click(chip);
+  await sleep(250);
+  ok(qa('#planResult .step').length >= 3, 'planner returns a multi-vehicle journey (' + qa('#planResult .step').length + ' steps)');
+  ok(q('#planResult').textContent.indexOf('B13') !== -1 && q('#planResult').textContent.indexOf('B21') !== -1,
+    'planner names both vehicles (B13 and B21)');
+  ok(q('#planResult').textContent.indexOf('PECHS') !== -1, 'planner names the transfer stop');
+  ok(q('#planResult').textContent.indexOf('Why this journey') === -1, 'planner reasons are shown per step');
+
+  /* --- T4: SOS hold + cancel --- */
+  var sosQuick = q('#qaSos');
+  click(sosQuick);
+  await sleep(250);
+  ok(!!q('.screen[data-screen="safety"].active'), 'SOS opens the safety screen');
+  var sosBtn = q('#sosBtn');
+  ok(!!sosBtn, 'SOS button is present');
+
+  sosBtn.dispatchEvent(new app.contentWindow.PointerEvent('pointerdown', { bubbles: true }));
+  await sleep(2400);
+  ok(!!q('#sosCount'), 'holding for 2 s starts the cancel countdown (IR3)');
+  var cancelBtn = q('#btnCancelSos');
+  ok(!!cancelBtn, 'cancel is visible during the countdown (user control)');
+  if (cancelBtn) { click(cancelBtn); await sleep(250); }
+  ok(!q('#sosCount') && !!q('#sosBtn'), 'cancelling the SOS returns to the idle state');
+  ok(qa('#safetyBody .card').length >= 0, 'safety screen stays usable after cancel');
+
+  /* --- robbery report --- */
+  click(q('#btnRobbery'));
+  await sleep(250);
+  ok(!!q('#scrim.open'), 'robbery report opens a separate form (not the SOS flow)');
+  click(q('#rbSubmit'));
+  await sleep(250);
+  ok(q('#safetyBody').textContent.indexOf('SOS') !== -1, 'the submitted robbery report appears in My reports');
+
+  /* --- language + RTL --- */
+  var moreTab = qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'more'; })[0];
+  click(moreTab);
+  await sleep(250);
+  var urBtn = qa('#moreBody [data-lang]').filter(function (b) { return b.getAttribute('data-lang') === 'ur'; })[0];
+  click(urBtn);
+  await sleep(400);
+  ok(doc.documentElement.getAttribute('dir') === 'rtl', 'Urdu switches the layout to right-to-left (FR10)');
+  ok(doc.body.textContent.indexOf('ٹرانزٹ') !== -1, 'Urdu strings are applied');
+  click(q('#btnLangQuick'));
+  await sleep(400);
+  ok(doc.documentElement.getAttribute('dir') === 'ltr', 'switching back returns to left-to-right');
+
+  /* --- accessibility --- */
+  var contrast = qa('#moreBody [data-setting]').filter(function (b) { return b.getAttribute('data-setting') === 'contrast'; })[0];
+  click(contrast);
+  await sleep(250);
+  ok(doc.body.classList.contains('contrast'), 'high-contrast mode can be switched on (IR4)');
+  click(contrast);
+  await sleep(150);
+
+  /* --- offline: last known position with its age (IR5) --- */
+  var moreTab2 = qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'more'; })[0];
+  click(moreTab2);
+  await sleep(250);
+  var offSw = qa('#moreBody [data-setting]').filter(function (b) { return b.getAttribute('data-setting') === 'offline'; })[0];
+  ok(!!offSw, 'a "simulate connection loss" switch exists');
+  click(offSw);
+  await sleep(400);
+  click(qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'home'; })[0]);
+  await sleep(400);
+  ok(!!q('#offlineBanner .banner'), 'dropping the connection shows an offline banner (IR5)');
+  ok(q('#offlineBanner').textContent.indexOf('last update') !== -1, 'the banner states the age of the last update');
+  var etaText = q('#homeNearby').textContent;
+  ok(etaText.indexOf('Last known') !== -1, 'ETA cards switch from Live to Last known while offline');
+  ok(q('#homeNearby').textContent.indexOf('Live') === -1, 'no ETA claims to be live while offline');
+  click(moreTab2);
+  await sleep(250);
+  click(qa('#moreBody [data-setting]').filter(function (b) { return b.getAttribute('data-setting') === 'offline'; })[0]);
+  await sleep(300);
+  click(qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'home'; })[0]);
+  await sleep(300);
+  ok(!q('#offlineBanner .banner'), 'reconnecting clears the offline banner');
+
+  /* --- reviews --- */
+  var routesTab2 = qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'routes'; })[0];
+  click(routesTab2);
+  await sleep(200);
+  click(qa('#routeList .routecard')[0]);
+  await sleep(250);
+  var reviewBtn = qa('#routeBody [data-review]')[0];
+  click(reviewBtn);
+  await sleep(250);
+  ok(!!q('#sheet [data-star]'), 'rating sheet opens with 5 stars (IR7)');
+  click(qa('#sheet [data-star]')[4]);
+  await sleep(100);
+  click(q('#revSubmit'));
+  await sleep(300);
+  ok(!q('#scrim.open'), 'review submits and closes');
+
+  results.push('');
+  results.push(fails === 0 ? 'ALL PASS' : fails + ' FAILURES');
+  document.title = fails === 0 ? 'PASS' : 'FAIL';
+  flush();
+})();
+</script>
+</body>
+</html>

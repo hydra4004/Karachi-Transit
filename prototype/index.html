@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karachi Transit — Phase 2 Prototype</title>
+<link rel="stylesheet" href="shared/app.css">
+<style>
+  .launch { max-width: 1080px; margin: 0 auto; padding: 40px 20px 60px; }
+  .launch h1 { font-size: 30px; margin: 0 0 6px; }
+  .launch .lead { color: var(--ink-2); max-width: 70ch; margin: 0 0 26px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .launch .card { display: flex; flex-direction: column; gap: 8px; }
+  .launch .card h3 { margin: 0; font-size: 17px; }
+  .launch .card p { margin: 0; font-size: 13.5px; }
+  .launch .card .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .launch a.app { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; font-weight: 600; color: var(--brand); text-decoration: none; }
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; }
+  .steps li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .steps li:last-child { border-bottom: 0; }
+  .steps li::before {
+    counter-increment: s; content: counter(s);
+    width: 26px; height: 26px; flex: 0 0 auto; border-radius: 50%;
+    background: var(--brand-soft); color: var(--brand-ink); font-weight: 700;
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+  }
+  .warnbox { border: 1px solid #f4dfae; background: var(--warn-soft); color: #7c4a03; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; }
+</style>
+</head>
+<body>
+<div class="launch">
+  <h1>Karachi Transit — Phase 2 interactive prototype</h1>
+  <p class="lead">
+    A commuter app for Karachi bus and chinchi routes with live vehicle positions, stop ETAs, a multi-vehicle
+    journey planner, SOS and robbery reporting and driver reviews — plus the union operations portal that keeps
+    the same data current. All vehicle positions, ETAs and union updates are simulated.
+  </p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Commuter app (mobile)</h3>
+      <p>Five tabs — Home, Map, Routes, Planner, More. Supports the four evaluation tasks end to end:
+         find a route, track a bus and read its ETA, plan a two-vehicle trip, send and cancel an SOS, report a robbery.</p>
+      <div class="tags">
+        <span class="badge live">Live / Estimated badges</span>
+        <span class="badge neutral">Urdu RTL</span>
+        <span class="badge neutral">SOS hold + cancel</span>
+        <span class="badge neutral">Reviews</span>
+      </div>
+      <a class="app" href="commuter/index.html">Open the commuter app →</a>
+    </div>
+
+    <div class="card">
+      <h3>Union operations portal (desktop)</h3>
+      <p>Fleet list, manual vehicle and driver editing, status publishing and alert history, with a live preview of the
+         commuter app. Publish a status change and the commuter app updates within a second.</p>
+      <div class="tags">
+        <span class="badge neutral">Manual vehicle / driver updates</span>
+        <span class="badge neutral">Set delayed / out of service</span>
+        <span class="badge neutral">Reassign driver</span>
+        <span class="badge info">Live preview</span>
+      </div>
+      <a class="app" href="union/index.html">Open the union portal →</a>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Suggested demo script (5 minutes)</h3>
+    <ol class="steps">
+      <li><span>Open the commuter app and the union portal side by side in two tabs.</span></li>
+      <li><span>Home → tap <b>B13</b> to open the route, then open the map and tap a bus to see its next stop and ETA badge.</span></li>
+      <li><span>Map → in the <b>Selected routes</b> row tick <b>B13</b> and <b>C1</b>: only those two routes, the stops they serve and their vehicles stay on the map. Tap <b>All</b> to put every route back.</span></li>
+      <li><span>Planner → tap the <b>Sea View → Korangi</b> chip: two vehicles, one transfer at PECHS, with the reason for the change printed on each step.</span></li>
+      <li><span>Safety → press and hold the SOS button for 2 seconds, then cancel during the countdown.</span></li>
+      <li><span>Union portal → Fleet → pick a bus → set it <b>delayed</b> or <b>out of service</b>, reassign the driver if needed, then publish; the commuter app shows the route alert immediately.</span></li>
+      <li><span>More → switch the language to Urdu: the whole layout flips to right-to-left. Turn on High contrast for sunlight, and <b>Simulate connection loss</b> to see the last known position with its age.</span></li>
+    </ol>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>Documentation and tests</h3>
+    <p style="margin-top:0">The Phase 2 write-up sits in <code>docs/</code> next to this folder:
+      <code>01-design-requirements</code>, <code>02-conceptual-design</code>, <code>03-hci-principles</code>,
+      <code>04-traceability-matrix</code>, <code>05-wireframes</code>, <code>06-evaluation-plan</code>,
+      <code>07-iteration-log</code>, <code>08-phase1-evidence-todo</code>, <code>09-prototype-guide</code>,
+      <code>10-technical-reference</code> and the
+      assembled <code>PHASE2-SUBMISSION</code>. Serve the repository root to open them in the browser.</p>
+    <p style="margin-top:0">The prototype is verified by 269 automated checks:
+      <code>prototype/tests/engine.test.js</code> (218, Node), <code>prototype/tests/ui.test.html</code> (38, browser)
+      and <code>prototype/tests/sync.test.html</code> (13, browser). Run them all with
+      <code>powershell -ExecutionPolicy Bypass -File prototype/tests/run-tests.ps1</code>.</p>
+  </div>
+
+  <div class="warnbox" style="margin-top:18px">
+    <b>Running locally.</b> Serve this folder over HTTP so that the union portal and the commuter app can talk to each
+    other (they share state through <code>localStorage</code>):
+    <code>python -m http.server 8080</code> in this folder, then open <code>http://localhost:8080</code>.
+    Opening the files directly with <code>file://</code> works for the app itself, but the two apps may not stay in sync.
+  </div>
+</div>
+</body>
+</html>

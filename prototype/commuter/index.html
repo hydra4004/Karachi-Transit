@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Karachi Transit — Commuter App</title>
+<link rel="stylesheet" href="../shared/app.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="page">
+  <div class="page-head">
+    <h1 data-i18n="app.name">Karachi Transit</h1>
+    <p data-i18n="app.tagline">Bus &amp; Chinchi, live</p>
+    <p class="muted">Phase 2 interactive prototype · simulated vehicles, ETAs and union updates.</p>
+  </div>
+
+  <div class="device-grid">
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="brandmark">KTA</span>
+            <span id="sbClock">—</span>
+          </div>
+
+          <!-- ============================================================ HOME -->
+          <section class="screen active" data-screen="home">
+            <div class="appbar">
+              <div class="grow">
+                <h2 data-i18n="app.name">Karachi Transit</h2>
+                <span class="sub" data-i18n="app.tagline"></span>
+              </div>
+              <button class="iconbtn" id="btnLangQuick" title="Language" aria-label="Language">EN</button>
+              <button class="iconbtn" id="btnSosTop" title="SOS" aria-label="SOS"></button>
+            </div>
+            <div class="screen-pad">
+              <div id="offlineBanner"></div>
+              <div id="homeAlerts"></div>
+
+              <div class="searchbar" style="margin-bottom:12px">
+                <span id="searchIcon"></span>
+                <input class="input" id="q" type="search" autocomplete="off"
+                       data-i18n-placeholder="home.searchHint" placeholder="Search a stop, route number or area">
+              </div>
+              <div id="homeResults"></div>
+
+              <div class="section-title" data-i18n="home.quick">Quick actions</div>
+              <div class="quick-grid">
+                <button class="quick" id="qaPlan"><span class="qi" id="qiPlan"></span><span data-i18n="home.planTrip">Plan a trip</span></button>
+                <button class="quick danger" id="qaSos"><span class="qi" id="qiSos"></span><span data-i18n="home.sos">SOS</span></button>
+                <button class="quick warn" id="qaRobbery"><span class="qi" id="qiRobbery"></span><span data-i18n="home.robbery">Report robbery</span></button>
+                <button class="quick" id="qaTrack"><span class="qi" id="qiTrack"></span><span data-i18n="home.track">Track a bus</span></button>
+              </div>
+
+              <div class="section-title" data-i18n="home.savedPlaces">Saved places</div>
+              <div class="chiprow" id="homePlaces"></div>
+
+              <div class="section-title" data-i18n="home.recent">Recent searches</div>
+              <div class="chiprow" id="homeRecent"></div>
+
+              <div class="section-title" data-i18n="home.nearYou">Next buses near you</div>
+              <div id="homeNearby"></div>
+
+              <div class="section-title row between">
+                <span data-i18n="home.popular">Popular routes</span>
+                <button class="link" id="linkAllRoutes" data-i18n="home.allRoutes">See all routes</button>
+              </div>
+              <div id="homeRoutes"></div>
+            </div>
+          </section>
+
+          <!-- ============================================================ MAP -->
+          <section class="screen" data-screen="map">
+            <div class="appbar">
+              <button class="iconbtn" id="btnMapBack" style="display:none"></button>
+              <div class="grow">
+                <h2 data-i18n="map.title">Live map</h2>
+                <span class="sub" id="mapSub"></span>
+              </div>
+              <button class="iconbtn" id="btnMapAlerts" title="Alerts"></button>
+            </div>
+            <div class="mapwrap" style="position:relative;flex:1 1 auto;overflow:hidden">
+              <svg class="mapsvg" id="mapSvg" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="map-banner" id="mapBanner"></div>
+              <div class="map-controls">
+                <button id="mapIn" title="Zoom in">+</button>
+                <button id="mapOut" title="Zoom out">&minus;</button>
+                <button id="mapFit" title="Fit">&loz;</button>
+              </div>
+              <div class="map-legend">
+                <div class="lg"><span class="dot" style="background:#2563eb"></span><span data-i18n="map.bus">Bus</span></div>
+                <div class="lg"><span class="dot" style="background:#15803d"></span><span data-i18n="map.chinchi">Chinchi</span></div>
+                <div class="lg"><span class="dot" style="background:#d92d20"></span><span data-i18n="map.oos">Out of service</span></div>
+              </div>
+            </div>
+            <div class="mapchips" id="mapChips"></div>
+          </section>
+
+          <!-- ========================================================== ROUTES -->
+          <section class="screen" data-screen="routes">
+            <div class="appbar">
+              <div class="grow">
+                <h2 data-i18n="routes.title">All routes</h2>
+                <span class="sub" id="routesSub"></span>
+              </div>
+            </div>
+            <div class="screen-pad">
+              <div class="searchbar" style="margin-bottom:12px">
+                <span id="searchIcon2"></span>
+                <input class="input" id="qRoutes" type="search" autocomplete="off"
+                       data-i18n-placeholder="home.searchHint" placeholder="Search routes">
+              </div>
+              <div class="chiprow" id="routeFilters"></div>
+              <div id="routeList"></div>
+            </div>
+          </section>
+
+          <!-- ====================================================== ROUTE DETAIL -->
+          <section class="screen" data-screen="route">
+            <div class="appbar">
+              <button class="iconbtn" id="btnRouteBack"></button>
+              <div class="grow">
+                <h2 id="routeTitle">Route</h2>
+                <span class="sub" id="routeSub"></span>
+              </div>
+              <button class="iconbtn" id="btnRouteMap"></button>
+            </div>
+            <div class="screen-pad" id="routeBody"></div>
+          </section>
+
+          <!-- ======================================================= STOP DETAIL -->
+          <section class="screen" data-screen="stop">
+            <div class="appbar">
+              <button class="iconbtn" id="btnStopBack"></button>
+              <div class="grow">
+                <h2 id="stopTitle">Stop</h2>
+                <span class="sub" id="stopSub"></span>
+              </div>
+            </div>
+            <div class="screen-pad" id="stopBody"></div>
+          </section>
+
+          <!-- ============================================================ PLAN -->
+          <section class="screen" data-screen="plan">
+            <div class="appbar">
+              <div class="grow">
+                <h2 data-i18n="plan.title">Journey planner</h2>
+                <span class="sub" data-i18n="plan.aiNote"></span>
+              </div>
+            </div>
+            <div class="screen-pad">
+              <div class="card">
+                <div class="field">
+                  <label data-i18n="plan.origin">Starting from</label>
+                  <input class="input" id="planFrom" list="stopList" autocomplete="off">
+                </div>
+                <div class="field">
+                  <label data-i18n="plan.destination">Going to</label>
+                  <input class="input" id="planTo" list="stopList" autocomplete="off">
+                </div>
+                <button class="iconbtn" id="btnSwap" style="position:absolute;inset-inline-end:28px;margin-top:-56px;z-index:2"></button>
+                <button class="btn primary" id="btnPlan" data-i18n="plan.find">Find journey</button>
+              </div>
+              <datalist id="stopList"></datalist>
+              <div class="section-title" data-i18n="plan.alternatives">Other journeys</div>
+              <div class="chiprow" id="planSuggestions"></div>
+              <div id="planResult"></div>
+            </div>
+          </section>
+
+          <!-- ========================================================== SAFETY -->
+          <section class="screen" data-screen="safety">
+            <div class="appbar">
+              <button class="iconbtn" id="btnSafetyBack"></button>
+              <div class="grow">
+                <h2 data-i18n="safety.title">Safety</h2>
+                <span class="sub" data-i18n="safety.holdHelp"></span>
+              </div>
+            </div>
+            <div class="screen-pad" id="safetyBody"></div>
+          </section>
+
+          <!-- ============================================================ MORE -->
+          <section class="screen" data-screen="more">
+            <div class="appbar">
+              <div class="grow">
+                <h2 data-i18n="more.title">More</h2>
+                <span class="sub" data-i18n="app.name"></span>
+              </div>
+            </div>
+            <div class="screen-pad" id="moreBody"></div>
+          </section>
+
+          <!-- ========================================================== ALERTS -->
+          <section class="screen" data-screen="alerts">
+            <div class="appbar">
+              <button class="iconbtn" id="btnAlertsBack"></button>
+              <div class="grow">
+                <h2 data-i18n="alerts.title">Service alerts</h2>
+                <span class="sub" id="alertsSub"></span>
+              </div>
+            </div>
+            <div class="screen-pad" id="alertsBody"></div>
+          </section>
+
+          <!-- ============================================================ TABS -->
+          <nav class="tabbar" id="tabbar"></nav>
+
+          <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+          <div class="toast" id="toast"></div>
+          <div id="evalPanel"></div>
+        </div>
+      </div>
+      <div class="device-caption">Commuter app (mobile prototype)</div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/data.js"></script>
+<script src="../shared/sim.js"></script>
+<script src="../shared/i18n.js"></script>
+<script src="../shared/assets.js"></script>
+<script src="../shared/eval.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
