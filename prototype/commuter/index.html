@@ -23,7 +23,6 @@
         <div class="phone-screen">
 
           <div class="statusbar">
-            <span>9:41</span>
             <span class="brandmark">KTA</span>
             <span id="sbClock">—</span>
           </div>
@@ -42,18 +41,21 @@
               <div id="offlineBanner"></div>
               <div id="homeAlerts"></div>
 
-              <div class="searchbar" style="margin-bottom:12px">
+              <div class="searchbar">
                 <span id="searchIcon"></span>
                 <input class="input" id="q" type="search" autocomplete="off"
                        data-i18n-placeholder="home.searchHint" placeholder="Search a stop, route number or area">
               </div>
               <div id="homeResults"></div>
 
+              <div class="section-title" data-i18n="home.nearYou">Next buses near you</div>
+              <div id="homeNearby"></div>
+
               <div class="section-title" data-i18n="home.quick">Quick actions</div>
               <div class="quick-grid">
                 <button class="quick" id="qaPlan"><span class="qi" id="qiPlan"></span><span data-i18n="home.planTrip">Plan a trip</span></button>
                 <button class="quick danger" id="qaSos"><span class="qi" id="qiSos"></span><span data-i18n="home.sos">SOS</span></button>
-                <button class="quick warn" id="qaRobbery"><span class="qi" id="qiRobbery"></span><span data-i18n="home.robbery">Report robbery</span></button>
+                <button class="quick warn" id="qaRobbery"><span class="qi" id="qiRobbery"></span><span data-i18n="home.robbery">Complaint</span></button>
                 <button class="quick" id="qaTrack"><span class="qi" id="qiTrack"></span><span data-i18n="home.track">Track a bus</span></button>
               </div>
 
@@ -62,9 +64,6 @@
 
               <div class="section-title" data-i18n="home.recent">Recent searches</div>
               <div class="chiprow" id="homeRecent"></div>
-
-              <div class="section-title" data-i18n="home.nearYou">Next buses near you</div>
-              <div id="homeNearby"></div>
 
               <div class="section-title row between">
                 <span data-i18n="home.popular">Popular routes</span>
@@ -93,9 +92,8 @@
                 <button id="mapFit" title="Fit">&loz;</button>
               </div>
               <div class="map-legend">
-                <div class="lg"><span class="dot" style="background:#2563eb"></span><span data-i18n="map.bus">Bus</span></div>
-                <div class="lg"><span class="dot" style="background:#15803d"></span><span data-i18n="map.chinchi">Chinchi</span></div>
-                <div class="lg"><span class="dot" style="background:#d92d20"></span><span data-i18n="map.oos">Out of service</span></div>
+                <div class="lg"><span class="dot" style="background:#8a919b"></span><span data-i18n="map.bus">Bus</span></div>
+                <div class="lg"><span class="dot" style="background:#b1b8bf"></span><span data-i18n="map.chinchi">Chinchi</span></div>
               </div>
             </div>
             <div class="mapchips" id="mapChips"></div>
@@ -156,17 +154,16 @@
             <div class="screen-pad">
               <div class="card">
                 <div class="field">
-                  <label data-i18n="plan.origin">Starting from</label>
-                  <input class="input" id="planFrom" list="stopList" autocomplete="off">
+                  <label for="planFrom" data-i18n="plan.origin">Starting from</label>
+                  <button type="button" class="input plan-stop" id="planFrom" data-plan-pick="from"></button>
                 </div>
                 <div class="field">
-                  <label data-i18n="plan.destination">Going to</label>
-                  <input class="input" id="planTo" list="stopList" autocomplete="off">
+                  <label for="planTo" data-i18n="plan.destination">Going to</label>
+                  <button type="button" class="input plan-stop" id="planTo" data-plan-pick="to"></button>
                 </div>
                 <button class="iconbtn" id="btnSwap" style="position:absolute;inset-inline-end:28px;margin-top:-56px;z-index:2"></button>
                 <button class="btn primary" id="btnPlan" data-i18n="plan.find">Find journey</button>
               </div>
-              <datalist id="stopList"></datalist>
               <div class="section-title" data-i18n="plan.alternatives">Other journeys</div>
               <div class="chiprow" id="planSuggestions"></div>
               <div id="planResult"></div>

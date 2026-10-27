@@ -3,16 +3,111 @@
  * ==========================================================================*/
 
 /* quick action grid ------------------------------------------------------ */
+.screen[data-screen="home"] .screen-pad { padding: 16px 16px 24px; }
+.screen[data-screen="home"] .searchbar .input {
+  min-height: 52px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.screen[data-screen="home"] .section-title { margin: 24px 0 12px; }
+.screen[data-screen="home"] .chip { min-height: 44px; }
+.screen[data-screen="home"] .link { min-height: 44px; padding-inline: 8px; }
+.screen[data-screen="home"] #homeNearby .eta-card {
+  min-height: 80px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  text-align: start;
+}
+.screen[data-screen="home"] #homeNearby .eta-card:first-child {
+  border-inline-start: 3px solid var(--brand);
+}
+.screen[data-screen="home"] #homeNearby .eta-main { text-align: end; }
+.screen[data-screen="home"] #homeNearby .eta-main .num { font-size: var(--text-2xl); }
+.screen[data-screen="home"] #homeNearby .eta-meta .line2 { line-height: 1.4; margin-top: 2px; }
+
+.screen[data-screen="map"].active {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 0;
+  background: linear-gradient(180deg, #0d1f1d 0%, #081713 100%);
+}
+.screen[data-screen="map"] .appbar {
+  flex: 0 0 auto;
+  background: rgba(10, 20, 18, .92);
+  border-bottom-color: rgba(161, 177, 170, .22);
+}
+.screen[data-screen="map"] .mapwrap {
+  flex: 1 1 0;
+  min-height: 0;
+  background: #0a1716;
+}
+.screen[data-screen="map"] .mapchips {
+  flex: 0 0 auto;
+  max-height: 32%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(10, 20, 18, .97);
+  border-top-color: rgba(161, 177, 170, .2);
+}
+.screen[data-screen="map"].plan-picking .mapchips { display: none; }
+#mapSvg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--map-background);
+}
+#mapSvg .stop-label {
+  font-weight: 600;
+}
+#mapSvg .route-line {
+  opacity: .95;
+}
+#mapSvg .map-road,
+#mapSvg .map-grid {
+  stroke: rgba(255, 255, 255, .08);
+}
+.map-legend {
+  background: rgba(10, 20, 18, .8);
+  border: 1px solid rgba(161, 177, 170, .14);
+  color: #edf4f2;
+}
+.map-banner { background: rgba(11, 20, 18, .9); }
+body.contrast .screen[data-screen="map"].active,
+body.contrast .screen[data-screen="map"] .appbar,
+body.contrast .screen[data-screen="map"] .mapwrap,
+body.contrast .screen[data-screen="map"] .mapchips,
+body.contrast .screen[data-screen="map"] .map-legend,
+body.contrast .screen[data-screen="map"] .map-banner {
+  background: var(--surface);
+  color: var(--ink);
+}
+body.contrast #mapSvg { background: var(--map-background); }
+body.contrast #mapSvg .map-road,
+body.contrast #mapSvg .map-grid { stroke: rgba(15, 23, 42, .16); }
+.plan-stop {
+  text-align: start;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-inline: 12px;
+}
+.plan-stop:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.btn.plan-cancel { min-height: 44px; }
+.stop-dot:focus-visible { stroke: var(--ink); stroke-width: 4; }
+
 .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .quick {
   display: flex; align-items: center; gap: 10px;
   min-height: 60px; padding: 10px 12px;
-  border: 1px solid var(--line); border-radius: 14px;
+  border: 1px solid var(--line); border-radius: 12px;
   background: var(--surface); box-shadow: var(--shadow);
-  cursor: pointer; text-align: start; font-size: 13.5px; font-weight: 600;
+  cursor: pointer; text-align: start; font-size: var(--text-base); font-weight: 600;
 }
 .quick .qi {
-  width: 36px; height: 36px; border-radius: 10px; flex: 0 0 auto;
+  width: 36px; height: 36px; border-radius: 8px; flex: 0 0 auto;
   display: flex; align-items: center; justify-content: center;
   background: var(--brand-soft); color: var(--brand-ink);
 }
@@ -20,6 +115,23 @@
 .quick.danger .qi { background: var(--danger-soft); color: var(--danger); }
 .quick.warn .qi { background: var(--warn-soft); color: var(--warn); }
 .quick:active { background: var(--surface-2); }
+
+.attach-box {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.attach-box input[type="file"] {
+  width: 100%;
+  color: var(--ink-2);
+}
+.attach-meta {
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
 
 /* chip rows -------------------------------------------------------------- */
 .chiprow { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -33,22 +145,22 @@
   padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px;
   background: var(--surface); cursor: pointer; text-align: start; margin-bottom: 8px;
 }
-.result .rttl { font-size: 14px; font-weight: 600; }
-.result .rsub { font-size: 12px; color: var(--ink-3); }
+.result .rttl { font-size: var(--text-md); font-weight: 600; }
+.result .rsub { font-size: var(--text-sm); color: var(--ink-3); }
 
 /* route cards ------------------------------------------------------------ */
 .routecard {
   display: flex; align-items: center; gap: 12px; width: 100%;
-  padding: 12px; border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px; border: 1px solid var(--line); border-radius: 12px;
   background: var(--surface); cursor: pointer; text-align: start;
-  margin-bottom: 10px; box-shadow: var(--shadow);
+  margin-bottom: 10px; box-shadow: var(--shadow); min-height: 64px;
 }
 .routecard .rc-main { min-width: 0; flex: 1 1 auto; }
-.routecard .rc-name { font-size: 14px; font-weight: 600; }
-.routecard .rc-sub { font-size: 12px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.routecard .rc-name { font-size: var(--text-md); font-weight: 600; }
+.routecard .rc-sub { font-size: var(--text-sm); color: var(--ink-3); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .routecard .rc-eta { text-align: center; flex: 0 0 auto; }
-.routecard .rc-eta .n { font-size: 17px; font-weight: 700; line-height: 1.1; }
-.routecard .rc-eta .u { font-size: 10.5px; color: var(--ink-3); }
+.routecard .rc-eta .n { font-size: var(--text-xl); font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.routecard .rc-eta .u { font-size: var(--text-xs); color: var(--ink-3); }
 
 /* map filter chips ------------------------------------------------------- */
 .mapchips {
@@ -58,21 +170,35 @@
 .mapchips .mc-row { display: flex; align-items: center; gap: 8px; overflow-x: auto; }
 .mapchips .mc-row::-webkit-scrollbar { height: 0; }
 .mapchips .mc-row-type .mc-count {
-  margin-inline-start: auto; white-space: nowrap; font-size: 11.5px; color: var(--ink-3);
+  margin-inline-start: auto; white-space: nowrap; font-size: var(--text-sm); color: var(--ink-2);
 }
 .mapchips .mc-lbl {
-  font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3);
+  font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2);
   white-space: nowrap;
 }
-.mapchips .chip { cursor: pointer; white-space: nowrap; }
+.mapchips .chip { cursor: pointer; white-space: nowrap; color: var(--ink); }
 .mapchips .mc-row-type .chip.on {
   background: var(--brand-soft); border-color: var(--brand); color: var(--brand-ink); font-weight: 600;
 }
 .mapchips .mc-route.on {
-  background: var(--mc, var(--brand)); border-color: var(--mc, var(--brand)); color: #fff; font-weight: 600;
+  background-color: var(--mc, var(--brand));
+  border-color: var(--mc, var(--brand));
+  color: #fff;
+  font-weight: 600;
 }
 .mapchips .mc-route { border-inline-start: 4px solid var(--mc, var(--brand)); }
 .mapchips .mc-row-focus .chip { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-ink); }
+body.contrast .mapchips .mc-row-type .chip.on,
+body.contrast .mapchips .mc-row-focus .chip {
+  background-color: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+body.contrast .mapchips .mc-route.on {
+  background-color: var(--mc, var(--brand));
+  border-color: var(--mc, var(--brand));
+  color: #fff;
+}
 
 /* stop / route detail lists --------------------------------------------- */
 .stoprow {
@@ -84,12 +210,12 @@
   border: 3px solid var(--brand); background: #fff;
 }
 .stoprow .sdot.informal { border-color: var(--warn); border-radius: 4px; }
-.stoprow .sname { font-size: 14px; font-weight: 600; }
-.stoprow .ssub { font-size: 12px; color: var(--ink-3); }
-.stoprow .seta { font-size: 12px; color: var(--ink-2); text-align: end; flex: 0 0 auto; min-width: 96px; }
+.stoprow .sname { font-size: var(--text-md); font-weight: 600; }
+.stoprow .ssub { font-size: var(--text-sm); color: var(--ink-3); }
+.stoprow .seta { font-size: var(--text-sm); color: var(--ink-2); text-align: end; flex: 0 0 auto; min-width: 96px; }
 
 .vehiclecard {
-  border: 1px solid var(--line); border-radius: 14px; padding: 12px;
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px;
   background: var(--surface); margin-bottom: 10px;
 }
 
@@ -99,12 +225,12 @@
   position: absolute; inset-inline: 10px; bottom: 78px;
   background: rgba(15, 23, 42, .95); color: #fff; border-radius: 14px;
   padding: 10px; pointer-events: auto; box-shadow: var(--shadow-lg);
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 #evalPanel .evalbox .row { flex-wrap: wrap; gap: 6px; }
 #evalPanel .evalbox button {
   border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.1); color: #fff;
-  border-radius: 8px; padding: 6px 9px; font-size: 11.5px; cursor: pointer; min-height: 32px;
+  border-radius: 8px; padding: 6px 9px; font-size: var(--text-xs); cursor: pointer; min-height: 44px;
 }
 #evalPanel .evalbox button.on { background: #22c55e; border-color: #22c55e; color: #05240f; font-weight: 700; }
 #evalPanel .evalbox .title { font-weight: 700; margin-bottom: 6px; display: flex; justify-content: space-between; }
@@ -115,7 +241,7 @@ body.embed .page { padding: 0; display: block; background: #0b1220; }
 body.embed .page-head { display: none; }
 body.embed .device-caption { display: none; }
 body.embed .phone {
-  width: 392px; height: 812px; border-radius: 0; padding: 0; box-shadow: none;
+  width: 100%; max-width: 392px; height: 100%; min-height: 0; border-radius: 0; padding: 0; box-shadow: none;
 }
 body.embed .phone-notch { display: none; }
 
@@ -124,3 +250,61 @@ body.embed .phone-notch { display: none; }
 .hr { height: 1px; background: var(--line); margin: 10px 0; }
 .pill-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 a.btn { text-decoration: none; }
+
+@container (max-width: 360px) {
+  .quick-grid { grid-template-columns: 1fr; }
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body:not(.contrast) .screen:not([data-screen="map"]) .appbar,
+  body:not(.contrast) .screen[data-screen="home"] .quick,
+  body:not(.contrast) .screen .iconbtn {
+    background-color: var(--glass-tint);
+    border-color: var(--glass-edge);
+    -webkit-backdrop-filter: blur(18px) saturate(1.45);
+    backdrop-filter: blur(18px) saturate(1.45);
+    box-shadow: var(--glass-shadow);
+  }
+
+  body:not(.contrast) .screen[data-screen="map"] .appbar,
+  body:not(.contrast) .screen[data-screen="map"] .mapchips,
+  body:not(.contrast) .screen[data-screen="map"] .map-controls,
+  body:not(.contrast) .screen[data-screen="map"] .map-legend {
+    -webkit-backdrop-filter: blur(22px) saturate(1.55);
+    backdrop-filter: blur(22px) saturate(1.55);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .1);
+  }
+
+  body:not(.contrast) .screen[data-screen="map"] .appbar,
+  body:not(.contrast) .screen[data-screen="map"] .mapchips {
+    background-color: rgba(10, 20, 18, .68);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  .screen[data-screen="map"].active,
+  .screen[data-screen="map"] .appbar,
+  .screen[data-screen="map"] .mapwrap,
+  .screen[data-screen="map"] .mapchips,
+  .screen[data-screen="map"] .map-legend,
+  .screen[data-screen="map"] .map-banner {
+    background: var(--surface);
+    color: var(--ink);
+  }
+  #mapSvg { background: var(--map-background); }
+  #mapSvg .map-road,
+  #mapSvg .map-grid { stroke: rgba(15, 23, 42, .16); }
+  .screen[data-screen="map"] .appbar,
+  .screen[data-screen="map"] .mapchips {
+    background: var(--surface);
+  }
+  .screen[data-screen="map"] .appbar,
+  .screen[data-screen="map"] .mapchips,
+  .screen[data-screen="map"] .map-controls,
+  .screen[data-screen="map"] .map-legend {
+    background-color: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+}

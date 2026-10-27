@@ -39,7 +39,7 @@ The project is a public transport app for Karachi commuters, made of a commuter 
 
 **How the two halves are one product.** The union portal is not a separate admin screen that the commuter never sees. It writes into the same store the commuter app reads, so a vehicle marked "out of service" by the union disappears from the arrival list and raises a route alert for the commuter within a second. That closed loop is the part of this project that answers Phase 1 finding F1 — commuters blame the union for wrong information, and the union has no way to correct it.
 
-**Prototype status.** The prototype is a working HTML/CSS/JavaScript application, not a clickable picture. It has 30 simulated stops, 8 routes, 14 vehicles, a live-updating map, a journey planner, the full safety flow, reviews, and a union portal whose updates reach the commuter app in real time. It is verified by 269 automated checks (`prototype/tests/`).
+**Prototype status.** The prototype is a working HTML/CSS/JavaScript application, not a clickable picture. It has 30 simulated stops, 8 routes, 14 vehicles, a live-updating map, a journey planner, the full safety flow, reviews, and a union portal whose updates reach the commuter app in real time. It has 282 automated checks (`prototype/tests/`).
 
 ---
 

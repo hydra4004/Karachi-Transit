@@ -26,6 +26,8 @@ Then open <http://localhost:8080/>.
 
 > Use a local server rather than opening the HTML files directly. The union portal and the commuter app talk to each other through `localStorage` and `BroadcastChannel`, which only work for pages on the same origin. Opening the files with `file://` gives each page a different origin, so the portal's updates will not reach the commuter app.
 
+On narrow screens, the commuter app fills the viewport instead of appearing inside a device frame. The map uses the available portrait height and can be panned and zoomed to explore routes beyond the initial view.
+
 ### Option C — no server at all
 
 Open `prototype/commuter/index.html` directly. Everything except the cross-app sync works.
@@ -59,6 +61,7 @@ prototype/
 │   ├── data.js             simulated stops, routes, vehicles, plans, unions, calls, reviews
 │   ├── sim.js              geometry, simulation clock, ETA model, store, planner
 │   ├── i18n.js             English + Urdu strings, RTL switching
+│   ├── fonts/              bundled Noto Nastaliq Urdu font and SIL OFL license
 │   ├── assets.js           landmark illustrations, icon set, stars (inline, no network)
 │   ├── eval.js             evaluation mode: task log, summary, JSON/CSV export
 │   └── app.css             shared design system
@@ -72,8 +75,8 @@ prototype/
 │   └── portal.css          desktop layout
 └── tests/
     ├── engine.test.js      218 data/engine checks (Node)
-    ├── ui.test.html        38 browser checks of the real commuter app
-    ├── sync.test.html      13 browser checks of portal → commuter sync
+    ├── ui.test.html        49 browser checks of the real commuter app
+    ├── sync.test.html      15 browser checks of portal → commuter sync
     └── run-tests.ps1       runs all three suites
 ```
 

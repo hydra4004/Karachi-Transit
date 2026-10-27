@@ -21,9 +21,9 @@
     { id: 'T3', title: 'Plan a trip that needs two vehicles and describe the steps',
       prompt: 'Plan a journey from Sea View to Korangi and describe every step out loud.',
       success: 'Names both buses (B13, B21) and the transfer stop (PECHS)' },
-    { id: 'T4', title: 'Trigger SOS, then cancel it; then report a robbery',
-      prompt: 'Send an SOS and then cancel it. After that, send a robbery report.',
-      success: 'Cancels the SOS inside the countdown window and submits the robbery report' }
+    { id: 'T4', title: 'Trigger SOS, then cancel it; then report a complaint',
+      prompt: 'Send an SOS and then cancel it. After that, send a complaint report.',
+      success: 'Cancels the SOS inside the countdown window and submits the complaint report' }
   ];
 
   function blank() {

@@ -315,9 +315,10 @@
       toastEl = document.createElement('div');
       toastEl.className = 'toast';
       Object.assign(toastEl.style, {
-        position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
-        background: '#0f172a', color: '#fff', padding: '12px 18px', borderRadius: '12px',
-        zIndex: '999', fontSize: '13.5px', boxShadow: '0 12px 40px rgba(15,23,42,.25)'
+        position: 'fixed', insetBlockEnd: 'max(var(--space-4), env(safe-area-inset-bottom))',
+        insetInlineStart: '50%', transform: 'translateX(-50%)',
+        background: 'var(--ink)', color: 'var(--surface)', padding: 'var(--space-3) var(--space-6)',
+        borderRadius: 'var(--radius)', zIndex: '999', fontSize: 'var(--text-base)', boxShadow: 'var(--shadow-lg)'
       });
       document.body.appendChild(toastEl);
     }

@@ -2,7 +2,7 @@
 
 An interactive prototype of a public transport app for Karachi commuters, plus the union portal that keeps the data true.
 
-- **Commuter app** (mobile): browse bus and chinchi routes, track vehicles live on a map, plan a journey that needs more than one vehicle, send an SOS or a robbery report, and rate a driver or a vehicle.
+- **Commuter app** (mobile): browse bus and chinchi routes, track vehicles live on a map, plan a journey that needs more than one vehicle, send an SOS or a complaint report, and rate a driver or a vehicle.
 - **Union portal** (desktop): unions set a vehicle's status, log the calls drivers make by phone, and publish alerts that appear in the commuter app within a second.
 
 All vehicle positions, ETAs, routes and stops are **simulated**. There is no tracker hardware, no live feed and no real AI model behind the planner.
@@ -28,7 +28,7 @@ Then open <http://localhost:8080/> for the launcher and the demo script.
 powershell -ExecutionPolicy Bypass -File prototype\tests\run-tests.ps1
 ```
 
-269 automated checks: 218 on the data and simulation engine, 38 driving the real commuter app in a browser, and 13 on the union-portal → commuter-app sync.
+282 automated checks: 218 on the data and simulation engine, 49 driving the real commuter app in a browser, and 15 on the union-portal → commuter-app sync.
 
 ## Repository map
 
