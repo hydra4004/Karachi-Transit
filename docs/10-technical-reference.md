@@ -485,8 +485,8 @@ Static data (`STOPS`, `ROUTES`, `VEHICLES`, `PLANS`, `UNIONS`, `CALLS`, `REVIEWS
 | Suite | Type | Checks | Scope |
 | --- | --- | --- | --- |
 | `tests/engine.test.js` | Node | 218 | Data integrity, stop-to-route projection, ETA model, sorted arrivals, planner (prepared + fallback), store round trip, search, reviews |
-| `tests/ui.test.html` | Headless Chrome | 38 | The real commuter app: navigation, route/stop content, map, planner, SOS hold and cancel, robbery report, Urdu RTL, contrast, offline, review sheet |
-| `tests/sync.test.html` | Headless Chrome | 13 | Union portal to commuter app: fleet table, status panel, alert preview, published alert, out-of-service removal from arrivals, call acknowledgement |
+| `tests/ui.test.html` | Headless Chrome | 49 | The real commuter app: navigation, route/stop content, map, planner, SOS hold and cancel, robbery report, Urdu RTL, contrast, offline, review sheet |
+| `tests/sync.test.html` | Headless Chrome | 15 | Union portal to commuter app: fleet table, status panel, alert preview, published alert, out-of-service removal from arrivals, call acknowledgement |
 | `tests/run-tests.ps1` | PowerShell | — | Starts a local server, runs all three, stops the server, prints a summary |
 
 **How the browser tests work**: a test page loads the app in an `<iframe>`, then drives it with real DOM events (`MouseEvent`, `PointerEvent`) and asserts on the resulting DOM. The union portal and the commuter app are two iframes on the same origin, so `localStorage` and the `storage` event connect them exactly as they would in two real tabs.

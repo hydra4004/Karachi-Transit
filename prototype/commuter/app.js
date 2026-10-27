@@ -32,6 +32,7 @@
   }
   function agoText(sec) { return t('eta.updated', { n: Math.round(sec) }); }
   function routeColor(r) { return r.type === 'bus' ? '#2563eb' : '#15803d'; }
+  function routeChipColor() { return '#2563eb'; }
 
   /* ------------------------------------------------------------------ state */
   var state = {
@@ -41,6 +42,9 @@
     mapRoutes: null,          /* null = every route; otherwise array of route ids */
     mapFocusRoute: null,
     view: { x: 0, y: 0, w: 1000, h: 640 },
+    mapViewInitialized: false,
+    mapViewFit: true,
+    planPick: null,
     currentRoute: null,
     currentStop: null,
     currentVehicle: null,
@@ -158,8 +162,14 @@
     nearby.forEach(function (sid) {
       var arrivals = KTA.sim.arrivalsForStop(sid).slice(0, 2);
       var s = stopById(sid);
-      arrivals.forEach(function (a, i) {
-        rows.push({ arr: a, stop: s, first: i === 0 });
+      arrivals.forEach(function (a) {
+        var existing = rows.filter(function (row) { return row.arr.routeId === a.routeId; })[0];
+        if (!existing) {
+          rows.push({ arr: a, stop: s });
+        } else if (a.minutes < existing.arr.minutes) {
+          existing.arr = a;
+          existing.stop = s;
+        }
       });
     });
     rows.sort(function (a, b) { return a.arr.minutes - b.arr.minutes; });
@@ -183,16 +193,16 @@
         ? (a.stale ? t('eta.stale', { n: Math.round(a.liveAgeSec / 60) }) : agoText(a.liveAgeSec))
         : t('eta.scheduled', { n: a.estimatedAgeMin }));
     var route = routeById(a.routeId);
-    return '<div class="eta-card" data-stop="' + esc(a.stopId || (stop && stop.id) || '') + '">' +
-      '<span class="routechip" style="background:' + routeColor(route) + '">' + esc(route.number) + '</span>' +
-      '<div class="eta-meta grow">' +
-      '<div class="line1">' + esc(routeName(route)) + ' ' + badge + '</div>' +
-      '<div class="line2">' + (stop ? esc(stopName(stop.id)) + ' · ' : '') + esc(age) +
-      (a.status === 'delayed' ? ' · ' + esc(t('eta.delayed', { n: a.delayMin })) : '') + '</div>' +
-      '</div>' +
-      '<div class="eta-main"><div class="num">' + (a.minutes < 0.7 ? esc(t('common.now')) : Math.round(a.minutes)) + '</div>' +
-      '<div class="unit">' + (a.minutes < 0.7 ? '' : esc(t('common.min'))) + '</div></div>' +
-      '</div>';
+    return '<button type="button" class="eta-card" data-stop="' + esc(a.stopId || (stop && stop.id) || '') + '">' +
+      '<span class="routechip" style="background:' + routeChipColor(route) + '">' + esc(route.number) + '</span>' +
+      '<span class="eta-meta grow">' +
+      '<span class="line1">' + esc(routeName(route)) + ' ' + badge + '</span>' +
+      '<span class="line2">' + (stop ? esc(stopName(stop.id)) + ' · ' : '') + esc(age) +
+      (a.status === 'delayed' ? ' · ' + esc(t('eta.delayed', { n: a.delayMin })) : '') + '</span>' +
+      '</span>' +
+      '<span class="eta-main"><span class="num">' + (a.minutes < 0.7 ? esc(t('common.now')) : Math.round(a.minutes)) + '</span>' +
+      '<span class="unit">' + (a.minutes < 0.7 ? '' : esc(t('common.min'))) + '</span></span>' +
+      '</button>';
   }
 
   function renderHomeRoutes() {
@@ -201,7 +211,7 @@
     host.innerHTML = routes.map(function (r) {
       var arr = KTA.sim.nextArrival(r.id, r.stopIds[0]);
       return '<button class="routecard" data-route="' + r.id + '">' +
-        '<span class="routechip" style="background:' + routeColor(r) + '">' + esc(r.number) + '</span>' +
+        '<span class="routechip" style="background:' + routeChipColor(r) + '">' + esc(r.number) + '</span>' +
         '<span class="rc-main"><span class="rc-name">' + esc(routeName(r)) + '</span>' +
         '<span class="rc-sub">' + (r.type === 'bus' ? ICON('bus', 13) : ICON('rickshaw', 13)) +
         esc(r.stopIds.length + ' ' + t('common.stops')) +
@@ -225,7 +235,7 @@
       html += '<div class="section-title">' + esc(LANG === 'ur' ? 'روٹس' : 'Routes') + '</div>';
       html += res.routes.map(function (r) {
         return '<button class="result" data-route="' + r.id + '">' +
-          '<span class="routechip" style="background:' + routeColor(r) + '">' + esc(r.number) + '</span>' +
+          '<span class="routechip" style="background:' + routeChipColor(r) + '">' + esc(r.number) + '</span>' +
           '<span class="grow"><span class="rttl">' + esc(routeName(r)) + '</span>' +
           '<span class="rsub">' + esc(r.operator) + '</span></span></button>';
       }).join('');
@@ -247,30 +257,36 @@
   /* =============================================================== MAP ==== */
   function renderMap() {
     var svg = $id('mapSvg');
+    document.querySelector('.screen[data-screen="map"]').classList.toggle('plan-picking', !!state.planPick);
     if (!svg.getAttribute('data-built')) {
       svg.innerHTML = buildMapSvg();
       svg.setAttribute('data-built', '1');
       bindMapEvents(svg);
     }
-    applyView();
     applyMapFilter();
     updateMapVehicles();
     renderMapBanner();
     renderMapChips();
+    if (!state.mapViewInitialized) {
+      fitMapToViewport();
+      state.mapViewInitialized = true;
+    } else {
+      applyView();
+    }
   }
 
   function buildMapSvg() {
     var p = [];
-    p.push('<rect x="0" y="0" width="1000" height="640" fill="#e9f1f7"/>');
+    p.push('<rect class="map-background" x="0" y="0" width="1000" height="640"/>');
     /* water */
-    p.push('<path d="M0 560 L120 512 L250 566 L206 640 L0 640 Z" fill="#bfe3f0"/>');
-    p.push('<text x="60" y="600" class="stop-label" style="font-size:11px;fill:#5b7f92">Arabian Sea</text>');
+    p.push('<path class="map-water" d="M0 560 L120 512 L250 566 L206 640 L0 640 Z"/>');
+    p.push('<text x="60" y="600" class="stop-label map-sea-label">Arabian Sea</text>');
     /* area labels */
     var areas = [['Saddar', 470, 300], ['Clifton', 430, 430], ['PECHS', 640, 285], ['Bahadurabad', 630, 210],
       ['University Rd', 660, 150], ['Gulshan-e-Hadeed', 730, 112], ['Korangi', 862, 305], ['Malir', 846, 455],
       ['Nazimabad', 350, 236], ['North Karachi', 240, 135], ['Liaquatabad', 505, 196]];
     areas.forEach(function (a) {
-      p.push('<text x="' + a[1] + '" y="' + a[2] + '" class="stop-label" style="font-size:12px;fill:#9fb0c0;font-weight:600">' + a[0] + '</text>');
+      p.push('<text x="' + a[1] + '" y="' + a[2] + '" class="stop-label area-label">' + a[0] + '</text>');
     });
     /* route lines */
     KTA.data.ROUTES.forEach(function (r) {
@@ -284,10 +300,10 @@
       p.push('<g class="stop-group" data-stop-group="' + s.id + '">');
       if (s.kind === 'informal') {
         p.push('<rect class="stop-dot" data-stop="' + s.id + '" x="' + (s.x - 5) + '" y="' + (s.y - 5) +
-          '" width="10" height="10" rx="2.5" fill="#f59e0b" stroke="#fff"/>');
+          '" width="10" height="10" rx="2.5" fill="#f59e0b" stroke="#fff" tabindex="0" role="button" aria-label="' + esc(stopName(s.id)) + '"/>');
       } else {
         p.push('<circle class="stop-dot" data-stop="' + s.id + '" cx="' + s.x + '" cy="' + s.y +
-          '" r="5.5" fill="#0f766e" stroke="#fff"/>');
+          '" r="5.5" fill="#0f766e" stroke="#fff" tabindex="0" role="button" aria-label="' + esc(stopName(s.id)) + '"/>');
       }
       p.push('<text x="' + (s.x + 8) + '" y="' + (s.y + 3.5) + '" class="stop-label">' +
         esc(LANG === 'ur' ? s.ur : s.name) + '</text>');
@@ -388,6 +404,12 @@
   function renderMapBanner() {
     var host = $id('mapBanner');
     var html = '';
+    if (state.planPick) {
+      html += '<div class="banner info" role="status">' + ICON('pin', 16) +
+        '<div class="grow"><strong>' + esc(t(state.planPick === 'from' ? 'plan.pickFrom' : 'plan.pickTo')) + '</strong></div>' +
+        '<button class="btn compact plan-cancel" type="button" data-plan-cancel aria-label="' + esc(t('plan.cancelPick')) + '">' +
+        esc(t('plan.cancelPick')) + '</button></div>';
+    }
     if (state.offline) {
       html += '<div class="banner danger">' + ICON('alert', 16) +
         '<div class="grow"><strong>' + esc(t('eta.offline')) + '</strong>' +
@@ -447,11 +469,36 @@
     svg.setAttribute('viewBox', v.x + ' ' + v.y + ' ' + v.w + ' ' + v.h);
   }
 
+  function fitMapToViewport() {
+    var svg = $id('mapSvg');
+    if (!svg) return;
+    var rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    var aspect = rect.width / rect.height;
+    var width, height;
+    if (aspect < 1000 / 640) {
+      height = 640;
+      width = height * aspect;
+    } else {
+      width = 1000;
+      height = width / aspect;
+    }
+    state.view = {
+      x: (1000 - width) / 2,
+      y: (640 - height) / 2,
+      w: width,
+      h: height
+    };
+    state.mapViewFit = true;
+    applyView();
+  }
+
   function bindMapEvents(svg) {
     var drag = null;
     svg.addEventListener('pointerdown', function (e) {
       if (e.target.closest('[data-stop]') || e.target.closest('[data-veh]')) return;
       drag = { x: e.clientX, y: e.clientY, vx: state.view.x, vy: state.view.y };
+      state.mapViewFit = false;
       svg.setPointerCapture(e.pointerId);
     });
     svg.addEventListener('pointermove', function (e) {
@@ -468,11 +515,20 @@
       e.preventDefault();
       zoomBy(e.deltaY > 0 ? 1.15 : 0.87);
     }, { passive: false });
+    svg.addEventListener('keydown', function (e) {
+      var stopEl = e.target.closest('[data-stop]');
+      if (!stopEl || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var stopId = stopEl.getAttribute('data-stop');
+      if (state.planPick) selectPlanStop(stopId); else openStopSheet(stopId);
+    });
     svg.addEventListener('click', function (e) {
       var stopEl = e.target.closest('[data-stop]');
       if (stopEl) {
         e.stopPropagation();
         KTA.evalTool.log('tap', { target: 'map-stop:' + stopEl.getAttribute('data-stop') });
+        if (state.planPick) { selectPlanStop(stopEl.getAttribute('data-stop')); return; }
         openStopSheet(stopEl.getAttribute('data-stop'));
         return;
       }
@@ -494,6 +550,7 @@
     var nw = Math.max(200, Math.min(1400, v.w * factor));
     var nh = nw * (v.h / v.w);
     v.x = cx - nw / 2; v.y = cy - nh / 2; v.w = nw; v.h = nh;
+    state.mapViewFit = false;
     applyView();
   }
 
@@ -517,7 +574,7 @@
         : '<div class="empty">' + esc(t('stop.noBus')) + '</div>') +
       '<div class="section-title">' + esc(t('stop.serving')) + '</div>' +
       '<div class="chiprow">' + routes.map(function (r) {
-        return '<button class="chip" data-route="' + r.id + '"><span class="routechip" style="background:' + routeColor(r) + ';min-width:36px;height:22px;font-size:11px">' + esc(r.number) + '</span>' + esc(routeName(r)) + '</button>';
+        return '<button class="chip" data-route="' + r.id + '"><span class="routechip" style="background:' + routeChipColor(r) + ';min-width:36px;height:22px;font-size:.6875rem">' + esc(r.number) + '</span>' + esc(routeName(r)) + '</button>';
       }).join('') + '</div>' +
       '<div class="stack" style="margin-top:14px">' +
       '<button class="btn primary" data-openstop="' + stopId + '">' + esc(t('stop.planFrom')) + '</button>' +
@@ -545,7 +602,7 @@
       : '<span class="badge est">' + esc(t('eta.estimated')) + '</span>';
     var html =
       '<div class="row" style="margin-bottom:8px">' +
-      '<span class="routechip" style="background:' + routeColor(r) + '">' + esc(r.number) + '</span>' +
+      '<span class="routechip" style="background:' + routeChipColor(r) + '">' + esc(r.number) + '</span>' +
       '<div class="grow"><div style="font-weight:700">' + esc(routeName(r)) + '</div>' +
       '<div class="tiny muted">' + esc(v.plate) + ' · ' + esc(v.model) + '</div></div>' + badge + '</div>' +
       (v.status === 'out_of_service' ? '<div class="banner danger" style="margin-bottom:10px">' + ICON('alert', 16) + '<div>' + esc(t('eta.oos')) + '</div></div>' : '') +
@@ -628,36 +685,33 @@
   }
 
   function openRobberySheet(prefillVehicle) {
-    var types = [['robbery', t('safety.typeRobbery')], ['snatch', t('safety.typeSnatch')], ['harass', t('safety.typeHarass')], ['other', t('safety.typeOther')]];
     var html =
       '<h3>' + esc(t('safety.robbery')) + '</h3>' +
-      '<div class="field"><label>' + esc(t('safety.what')) + '</label>' +
-      '<div class="taglist" id="rbTypes">' + types.map(function (ty, i) {
-        return '<button class="tag' + (i === 0 ? ' on' : '') + '" data-rbtype="' + ty[0] + '">' + esc(ty[1]) + '</button>';
-      }).join('') + '</div></div>' +
-      '<div class="field"><label>' + esc(t('safety.amount')) + '</label>' +
-      '<input class="input" id="rbAmount" type="number" inputmode="numeric" placeholder="0"></div>' +
-      '<div class="field"><label>' + esc(t('safety.desc')) + '</label>' +
-      '<textarea class="input" id="rbDesc" rows="3"></textarea></div>' +
-      '<div class="switch" id="rbAnon"><span>' + esc(t('safety.anonymous')) + '</span><span class="track"></span></div>' +
-      '<button class="btn danger" id="rbSubmit" style="margin-top:12px">' + ICON('sos', 18) + esc(t('safety.send')) + '</button>';
+      '<form id="robberyForm">' +
+      '<div class="field"><label for="rbSubject">' + esc(t('safety.subject')) + '</label>' +
+      '<input class="input" id="rbSubject" name="subject" autocomplete="off" required></div>' +
+      '<div class="field"><label for="rbDesc">' + esc(t('safety.desc')) + '</label>' +
+      '<textarea class="input" id="rbDesc" name="description" rows="3" required></textarea></div>' +
+      '<div class="field"><label for="rbEvidence">' + esc(t('safety.evidence')) + '</label>' +
+      '<div class="attach-box"><input type="file" id="rbEvidence" name="evidence" accept="image/*" capture="environment" />' +
+      '<div class="attach-meta" id="rbEvidenceMeta">No image attached</div></div></div>' +
+      '<button class="btn danger" type="submit" id="rbSubmit" style="margin-top:12px">' + esc(t('safety.send')) + '</button></form>';
     openSheet(html, function (sheet) {
-      var selected = 'robbery';
-      sheet.querySelector('#rbTypes').addEventListener('click', function (e) {
-        var b = e.target.closest('[data-rbtype]');
-        if (!b) return;
-        selected = b.getAttribute('data-rbtype');
-        sheet.querySelectorAll('[data-rbtype]').forEach(function (x) { x.classList.toggle('on', x === b); });
+      var evidenceInput = sheet.querySelector('#rbEvidence');
+      var evidenceMeta = sheet.querySelector('#rbEvidenceMeta');
+      evidenceInput.addEventListener('change', function () {
+        var file = evidenceInput.files && evidenceInput.files[0];
+        evidenceMeta.textContent = file ? file.name : 'No image attached';
       });
-      var anon = false;
-      var sw = sheet.querySelector('#rbAnon');
-      sw.addEventListener('click', function () { anon = !anon; sw.classList.toggle('on', anon); });
-      sheet.querySelector('#rbSubmit').addEventListener('click', function () {
+      sheet.querySelector('#robberyForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var file = evidenceInput.files && evidenceInput.files[0];
+        var evidenceText = file ? file.name : '';
         KTA.sim.submitReport({
-          type: 'robbery', subtype: selected, vehicleId: prefillVehicle || null,
-          amount: sheet.querySelector('#rbAmount').value || null,
+          type: 'robbery', vehicleId: prefillVehicle || null,
+          subject: sheet.querySelector('#rbSubject').value.trim(),
           description: sheet.querySelector('#rbDesc').value.trim(),
-          anonymous: anon,
+          evidence: evidenceText,
           location: { x: 520, y: 330, label: stopName('st_jpo') },
           source: 'commuter-app'
         });
@@ -687,7 +741,7 @@
       var arr = KTA.sim.nextArrival(r.id, r.stopIds[0]);
       var live = r.track === 'live';
       return '<button class="routecard" data-route="' + r.id + '">' +
-        '<span class="routechip" style="background:' + routeColor(r) + '">' + esc(r.number) + '</span>' +
+        '<span class="routechip" style="background:' + routeChipColor(r) + '">' + esc(r.number) + '</span>' +
         '<span class="rc-main"><span class="rc-name">' + esc(routeName(r)) + '</span>' +
         '<span class="rc-sub">' + (r.type === 'bus' ? ICON('bus', 13) : ICON('rickshaw', 13)) +
         esc(r.stopIds.length + ' ' + t('common.stops')) + ' · ' + esc(r.fare + ' PKR') + ' · ' +
@@ -729,14 +783,14 @@
         : (v.status === 'delayed' ? '<span class="badge est">' + esc(t('eta.delayed', { n: v.delayMin })) + '</span>' : '');
       return '<div class="vehiclecard" data-veh="' + v.id + '" style="cursor:pointer">' +
         '<div class="row" style="margin-bottom:6px">' +
-        '<span class="routechip" style="background:' + routeColor(r) + '">' + esc(r.number) + '</span>' +
+        '<span class="routechip" style="background:' + routeChipColor(r) + '">' + esc(r.number) + '</span>' +
         '<div class="grow"><div style="font-weight:600">' + esc(v.plate) + '</div>' +
         '<div class="tiny muted">' + esc(v.model) + '</div></div>' + badge + '</div>' +
         '<div class="row wrap" style="gap:6px;margin-bottom:6px">' + statusBadge +
         '<span class="badge neutral">' + esc(t('route.nextStop')) + ': ' + esc(p.nextStop ? stopName(p.nextStop) : '—') + '</span>' +
         '<span class="badge neutral">' + esc(fmtMin(p.etaToNext)) + '</span></div>' +
         '<div class="tiny muted">' + esc(t('route.driver')) + ': ' + esc(LANG === 'ur' ? v.driver.ur : v.driver.name) + ' · ' + esc(v.plate) + '</div>' +
-        '</div>';
+        '</button>';
     }).join('') : '<div class="empty">' + esc(t('stop.noBus')) + '</div>';
 
     /* stop list with ETAs */
@@ -782,7 +836,7 @@
       if (reviews.length) {
         html += '<ul class="list">' + reviews.slice(0, 3).map(function (rv) {
           return '<li><div class="row" style="justify-content:space-between">' +
-            '<span style="font-size:13px;font-weight:600">' + esc(rv.author) + '</span>' +
+            '<span style="font-size:.8125rem;font-weight:600">' + esc(rv.author) + '</span>' +
             '<span class="tiny muted">' + STARS(rv.rating, 12) + '</span></div>' +
             '<div class="tiny" style="color:var(--ink-2)">' + esc(rv.text || '') + '</div>' +
             (rv.tags && rv.tags.length ? '<div class="tiny muted">' + esc(rv.tags.join(' · ')) + '</div>' : '') +
@@ -825,7 +879,7 @@
 
     html += '<div class="section-title">' + esc(t('stop.serving')) + '</div><div class="chiprow">' +
       routes.map(function (r) {
-        return '<button class="chip" data-route="' + r.id + '"><span class="routechip" style="background:' + routeColor(r) + ';min-width:36px;height:22px;font-size:11px">' + esc(r.number) + '</span>' + esc(routeName(r)) + '</button>';
+        return '<button class="chip" data-route="' + r.id + '"><span class="routechip" style="background:' + routeChipColor(r) + ';min-width:36px;height:22px;font-size:.6875rem">' + esc(r.number) + '</span>' + esc(routeName(r)) + '</button>';
       }).join('') + '</div>';
 
     html += '<div class="stack" style="margin-top:16px">' +
@@ -836,32 +890,24 @@
 
   /* ============================================================= PLAN ====== */
   function renderPlan() {
-    var dl = $id('stopList');
-    dl.innerHTML = KTA.data.STOPS.map(function (s) {
-      return '<option value="' + esc(LANG === 'ur' ? s.ur : s.name) + '"></option>';
-    }).join('');
-
     var sug = KTA.data.PLANS.slice(0, 4);
     $id('planSuggestions').innerHTML = sug.map(function (p) {
       return '<button class="chip" data-planpair="' + p.from + '|' + p.to + '">' +
         esc(stopName(p.from)) + ' → ' + esc(stopName(p.to)) + '</button>';
     }).join('');
 
-    if (state.planFrom) $id('planFrom').value = stopName(state.planFrom);
-    if (state.planTo) $id('planTo').value = stopName(state.planTo);
+    $id('planFrom').textContent = state.planFrom ? stopName(state.planFrom) : t('plan.chooseMap');
+    $id('planTo').textContent = state.planTo ? stopName(state.planTo) : t('plan.chooseMap');
 
     renderPlanResult();
   }
 
-  function resolveStop(text) {
-    if (!text) return null;
-    var q = text.trim().toLowerCase();
-    var found = null;
-    KTA.data.STOPS.forEach(function (s) {
-      if (!found && (s.name.toLowerCase() === q || s.ur === text.trim())) found = s.id;
-      if (!found && (s.name.toLowerCase().indexOf(q) === 0 || s.ur.indexOf(text.trim()) === 0)) found = s.id;
-    });
-    return found;
+  function selectPlanStop(stopId) {
+    if (state.planPick === 'from') state.planFrom = stopId;
+    else if (state.planPick === 'to') state.planTo = stopId;
+    state.planPick = null;
+    state.planResult = null;
+    go('plan');
   }
 
   function renderPlanResult() {
@@ -893,9 +939,9 @@
 
     host.innerHTML = '<div class="section-title">' + esc(stopName(p.from) + ' → ' + stopName(p.to)) + '</div>' +
       '<div class="card" style="margin-bottom:12px"><div class="row between">' +
-      '<div><div class="tiny muted">' + esc(t('plan.total')) + '</div><div style="font-size:20px;font-weight:700">' + esc(p.totalMin + ' ' + t('common.min')) + '</div></div>' +
-      '<div class="center"><div class="tiny muted">' + esc(t('plan.fare')) + '</div><div style="font-size:20px;font-weight:700">' + esc(p.cost + ' PKR') + '</div></div>' +
-      '<div class="center"><div class="tiny muted">' + esc(t('plan.step', { n: p.steps.length })) + '</div><div style="font-size:20px;font-weight:700">' + p.steps.length + '</div></div>' +
+      '<div><div class="tiny muted">' + esc(t('plan.total')) + '</div><div style="font-size:1.25rem;font-weight:700">' + esc(p.totalMin + ' ' + t('common.min')) + '</div></div>' +
+      '<div class="center"><div class="tiny muted">' + esc(t('plan.fare')) + '</div><div style="font-size:1.25rem;font-weight:700">' + esc(p.cost + ' PKR') + '</div></div>' +
+      '<div class="center"><div class="tiny muted">' + esc(t('plan.step', { n: p.steps.length })) + '</div><div style="font-size:1.25rem;font-weight:700">' + p.steps.length + '</div></div>' +
       '</div></div>' + steps +
       '<button class="btn primary" id="btnStartJourney" style="margin-top:12px">' + ICON('plan', 18) + esc(t('plan.start')) + '</button>';
     var b = $id('btnStartJourney');
@@ -954,10 +1000,12 @@
     var reps = KTA.sim.reports();
     if (!reps.length) return '<div class="empty">' + esc(LANG === 'ur' ? 'کوئی رپورٹ نہیں' : 'No reports yet') + '</div>';
     return reps.slice(0, 4).map(function (r) {
-      var kind = r.type === 'sos' ? 'SOS' : (r.subtype || 'robbery');
+      var kind = r.type === 'sos' ? 'SOS' : 'Complaint';
       return '<div class="card" style="padding:10px"><div class="row between">' +
-        '<span style="font-weight:600;font-size:13.5px">' + esc(kind) + '</span>' +
+        '<span style="font-weight:600;font-size:.84375rem">' + esc(r.type === 'sos' ? kind : (r.subject || t('safety.robbery'))) + '</span>' +
         '<span class="badge ' + (r.type === 'sos' ? 'oos' : 'info') + '">' + esc(t('safety.sent')) + '</span></div>' +
+        (r.type === 'robbery' ? '<div class="tiny" style="margin-top:4px">' + esc(r.description || '') +
+          (r.evidence ? '<div class="tiny muted">' + esc(t('safety.evidence')) + ': ' + esc(r.evidence) + '</div>' : '') + '</div>' : '') +
         '<div class="tiny muted">' + esc(r.location ? r.location.label : '') + ' · ' + esc(new Date(r.at).toLocaleTimeString()) + '</div></div>';
     }).join('');
   }
@@ -1165,13 +1213,17 @@
       if (el) { KTA.evalTool.log('tap', { target: 'route:' + el.getAttribute('data-route') }); openRoute(el.getAttribute('data-route')); return; }
 
       el = e.target.closest('[data-stop]');
-      if (el && !el.classList.contains('screen')) { KTA.evalTool.log('tap', { target: 'stop:' + el.getAttribute('data-stop') }); openStop(el.getAttribute('data-stop')); return; }
-
-      el = e.target.closest('[data-veh]');
-      if (el) { KTA.evalTool.log('tap', { target: 'veh:' + el.getAttribute('data-veh') }); openVehicleSheet(el.getAttribute('data-veh')); return; }
+      if (el && !el.classList.contains('screen')) {
+        KTA.evalTool.log('tap', { target: 'stop:' + el.getAttribute('data-stop') });
+        if (state.planPick) { selectPlanStop(el.getAttribute('data-stop')); return; }
+        openStop(el.getAttribute('data-stop')); return;
+      }
 
       el = e.target.closest('[data-review]');
       if (el) { openReviewSheet(el.getAttribute('data-review')); return; }
+
+      el = e.target.closest('[data-veh]');
+      if (el) { KTA.evalTool.log('tap', { target: 'veh:' + el.getAttribute('data-veh') }); openVehicleSheet(el.getAttribute('data-veh')); return; }
 
       el = e.target.closest('[data-place]');
       if (el) { var pl = KTA.data.PLACES.filter(function (p) { return p.id === el.getAttribute('data-place'); })[0]; if (pl) openStop(pl.stopId); return; }
@@ -1182,7 +1234,7 @@
       el = e.target.closest('[data-mapfilter]');
       if (el) {
         var f = el.getAttribute('data-mapfilter');
-        if (f === 'all') setMapRoutes(null);
+        if (f === 'all') { state.mapFocusRoute = null; setMapRoutes(null); }
         else if (f === 'bus') setMapRoutes(routeIdsOfType('bus'));
         else setMapRoutes(routeIdsOfType('chinchi'));
         return;
@@ -1202,14 +1254,31 @@
         var parts = el.getAttribute('data-planpair').split('|');
         state.planFrom = parts[0]; state.planTo = parts[1];
         state.planResult = KTA.sim.findPlan(parts[0], parts[1]);
-        $id('planFrom').value = stopName(parts[0]);
-        $id('planTo').value = stopName(parts[1]);
-        renderPlanResult();
+        renderPlan();
+        return;
+      }
+
+      el = e.target.closest('[data-plan-pick]');
+      if (el) {
+        state.planPick = el.getAttribute('data-plan-pick');
+        state.mapFocusRoute = null;
+        state.view = { x: 0, y: 0, w: 1000, h: 640 };
+        state.mapViewInitialized = true;
+        state.mapViewFit = false;
+        setMapRoutes(null);
+        go('map');
+        return;
+      }
+
+      el = e.target.closest('[data-plan-cancel]');
+      if (el) {
+        state.planPick = null;
+        go('plan');
         return;
       }
 
       el = e.target.closest('[data-planfrom]');
-      if (el) { state.planFrom = el.getAttribute('data-planfrom'); go('plan'); return; }
+      if (el) { state.planFrom = el.getAttribute('data-planfrom'); state.planResult = null; go('plan'); return; }
 
       el = e.target.closest('[data-lang]');
       if (el) { switchLang(el.getAttribute('data-lang')); return; }
@@ -1269,16 +1338,19 @@
     });
     $id('mapIn').addEventListener('click', function () { zoomBy(0.8); });
     $id('mapOut').addEventListener('click', function () { zoomBy(1.25); });
-    $id('mapFit').addEventListener('click', function () { state.view = { x: 0, y: 0, w: 1000, h: 640 }; applyView(); });
+    $id('mapFit').addEventListener('click', fitMapToViewport);
+    window.addEventListener('resize', function () {
+      if (state.screen === 'map' && state.mapViewFit) fitMapToViewport();
+    });
     $id('btnSwap').addEventListener('click', function () {
       var f = state.planFrom, to = state.planTo;
       state.planFrom = to; state.planTo = f;
-      $id('planFrom').value = state.planFrom ? stopName(state.planFrom) : '';
-      $id('planTo').value = state.planTo ? stopName(state.planTo) : '';
+      state.planResult = null;
+      renderPlan();
     });
     $id('btnPlan').addEventListener('click', function () {
-      var from = resolveStop($id('planFrom').value);
-      var to = resolveStop($id('planTo').value);
+      var from = state.planFrom;
+      var to = state.planTo;
       if (!from || !to) { toast(t('plan.noPlan')); return; }
       state.planFrom = from; state.planTo = to;
       var plan = KTA.sim.findPlan(from, to);

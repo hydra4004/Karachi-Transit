@@ -39,7 +39,7 @@ Copy one row per problem found. Attach a before and a after screenshot and name 
 | Suite | Checks | What it covers |
 | --- | --- | --- |
 | `prototype/tests/engine.test.js` | 218 | Data integrity, geometry, ETA model, sorted arrivals, planner (prepared and fallback), store round trip, search, reviews |
-| `prototype/tests/ui.test.html` | 38 | The real commuter app in a browser: navigation, route and stop content, map, planner, SOS hold and cancel, robbery report, Urdu/RTL, contrast mode, offline behaviour, review sheet |
-| `prototype/tests/sync.test.html` | 13 | Union portal → commuter app: fleet table, vehicle status panel, alert preview, published alert reaching the commuter, out-of-service vehicle removed from arrivals, driver-call acknowledgement |
+| `prototype/tests/ui.test.html` | 49 | The real commuter app in a browser: navigation, route and stop content, map, planner, SOS hold and cancel, robbery report, Urdu/RTL, contrast mode, offline behaviour, review sheet |
+| `prototype/tests/sync.test.html` | 15 | Union portal → commuter app: fleet table, vehicle status panel, alert preview, published alert reaching the commuter, out-of-service vehicle removed from arrivals, driver-call acknowledgement |
 
 Run them with `prototype/tests/run-tests.ps1` (or open the two HTML files in a browser at the same time as the local server).

@@ -39,6 +39,26 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
   /* --- shell --- */
   ok(qa('#tabbar button').length === 5, 'tab bar has 5 tabs');
   ok(!!q('.screen[data-screen="home"].active'), 'home screen is active on load');
+  ok(text('#qaRobbery') === 'Complaint', 'home action is labeled Complaint');
+  var nearbyRoutes = qa('#homeNearby .eta-card').map(function (card) {
+    return card.querySelector('.routechip').textContent.trim();
+  });
+  ok(nearbyRoutes.every(function (route, i) { return nearbyRoutes.indexOf(route) === i; }),
+    'nearby arrivals show each route only once');
+  ok(qa('#homeNearby .eta-card').every(function (card) {
+    return card.tagName === 'BUTTON' && card.lastElementChild.classList.contains('eta-main');
+  }), 'nearby arrival cards have valid button structure and aligned ETAs');
+  ok(qa('#homeNearby .routechip').every(function (chip) {
+    return app.contentWindow.getComputedStyle(chip).backgroundColor === 'rgb(37, 99, 235)';
+  }), 'vehicle-number badges use the blue brand color');
+  ok(app.contentWindow.getComputedStyle(q('#tabbar')).backdropFilter.indexOf('blur') !== -1 &&
+    app.contentWindow.getComputedStyle(q('#homeNearby .eta-card')).backdropFilter === 'none',
+    'navigation uses liquid glass while arrival content stays clear');
+  doc.body.classList.add('contrast');
+  var warningIconStyle = app.contentWindow.getComputedStyle(q('#qiRobbery'));
+  ok(warningIconStyle.color !== warningIconStyle.backgroundColor,
+    'high-contrast mode keeps quick-action icons distinguishable from their backgrounds');
+  doc.body.classList.remove('contrast');
 
   /* --- T1: find a route --- */
   var routesTab = qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'routes'; })[0];
@@ -60,6 +80,23 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
   ok(!!q('.screen[data-screen="map"].active'), 'route map button opens the live map');
   ok(qa('#mapSvg .route-line').length === 8, 'map draws all 8 route lines');
   ok(qa('#mapSvg .veh').length > 10, 'map draws the vehicles (' + qa('#mapSvg .veh').length + ')');
+  ok(!q('.map-legend [data-i18n="map.oos"]'), 'map legend only lists public transport modes');
+  ok(app.contentWindow.getComputedStyle(doc.body).colorScheme === 'dark' &&
+    app.contentWindow.getComputedStyle(q('#mapSvg .map-background')).fill === 'rgb(10, 23, 22)',
+    'normal mode uses a dark palette for the map and native controls');
+  doc.body.classList.add('contrast');
+  ok(app.contentWindow.getComputedStyle(doc.body).colorScheme === 'light' &&
+    app.contentWindow.getComputedStyle(q('#mapSvg .map-background')).fill === 'rgb(233, 241, 247)',
+    'high-contrast mode switches the full map to its light palette');
+  var activeRouteChip = q('#mapChips .mc-route.on');
+  ok(app.contentWindow.getComputedStyle(activeRouteChip).color === 'rgb(255, 255, 255)' &&
+    app.contentWindow.getComputedStyle(activeRouteChip).backgroundColor !== 'rgb(255, 255, 255)' &&
+    app.contentWindow.getComputedStyle(q('#mapChips .mc-lbl')).color === 'rgb(0, 0, 0)',
+    'map filter text stays readable in light high-contrast mode');
+  doc.body.classList.remove('contrast');
+  ok(app.contentWindow.getComputedStyle(q('#mapChips .mc-lbl')).color === 'rgb(208, 217, 211)' &&
+    app.contentWindow.getComputedStyle(activeRouteChip).color === 'rgb(255, 255, 255)',
+    'map filter text stays readable in dark mode');
 
   /* --- stop sheet --- */
   var stopDot = qa('#mapSvg .stop-dot').filter(function (d) { return d.getAttribute('data-stop') === 'st_ghanta'; })[0];
@@ -125,13 +162,46 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
   ok(!q('#sosCount') && !!q('#sosBtn'), 'cancelling the SOS returns to the idle state');
   ok(qa('#safetyBody .card').length >= 0, 'safety screen stays usable after cancel');
 
-  /* --- robbery report --- */
+  /* --- complaint report --- */
   click(q('#btnRobbery'));
   await sleep(250);
-  ok(!!q('#scrim.open'), 'robbery report opens a separate form (not the SOS flow)');
-  click(q('#rbSubmit'));
+  ok(!!q('#scrim.open'), 'complaint report opens a separate form (not the SOS flow)');
+  ok(!!q('#rbSubject[required]') && !!q('#rbDesc[required]') &&
+    !!q('#rbEvidence[type="file"][accept="image/*"]:not([required])'),
+    'complaint form has subject, description and an optional image attachment');
+  ok(!q('#rbTypes') && !q('#rbAmount'), 'complaint form has no category or amount field');
+  q('#rbSubject').value = 'Phone theft';
+  q('#rbDesc').value = 'A phone was taken near the stop.';
+  q('#robberyForm').dispatchEvent(new app.contentWindow.Event('submit', { bubbles: true, cancelable: true }));
   await sleep(250);
-  ok(q('#safetyBody').textContent.indexOf('SOS') !== -1, 'the submitted robbery report appears in My reports');
+  ok(q('#safetyBody').textContent.indexOf('Phone theft') !== -1 &&
+    q('#safetyBody').textContent.indexOf('A phone was taken') !== -1,
+    'the submitted complaint appears in My reports');
+
+  /* planner map selection */
+  click(planTab);
+  await sleep(250);
+  ok(!q('#stopList') && !!q('#planFrom[data-plan-pick="from"]'), 'planner uses map selection instead of a stop dropdown');
+  click(q('#planFrom'));
+  await sleep(250);
+  ok(!!q('.screen[data-screen="map"].plan-picking') && qa('#mapSvg [data-stop]').length === 30,
+    'planner map picker exposes stops from the shared dataset');
+  ok(q('#mapSvg').getAttribute('viewBox') === '0 0 1000 640', 'planner picker fits the complete stop map');
+  ok(!!q('#mapBanner [data-plan-cancel]') && q('#mapBanner [data-plan-cancel]').getBoundingClientRect().height >= 44,
+    'planner map selection can be cancelled with a 44px target');
+  ok(q('#mapSvg [data-stop="st_nipa"]').getAttribute('role') === 'button' &&
+    q('#mapSvg [data-stop="st_nipa"]').getAttribute('tabindex') === '0', 'map stops are keyboard focusable controls');
+  click(q('#mapSvg [data-stop="st_nipa"]'));
+  await sleep(250);
+  ok(!!q('.screen[data-screen="plan"].active') && q('#planFrom').textContent.indexOf('Beverly Hills') !== -1,
+    'selecting an existing Beverly Hills stop returns it once to the planner');
+  click(q('#planTo'));
+  await sleep(250);
+  q('#mapSvg [data-stop="st_seabreeze"]').dispatchEvent(new app.contentWindow.KeyboardEvent('keydown', {
+    key: 'Enter', bubbles: true, cancelable: true
+  }));
+  await sleep(250);
+  ok(q('#planTo').textContent.indexOf('Sea Breeze Corner') !== -1, 'keyboard activation selects a destination stop');
 
   /* --- language + RTL --- */
   var moreTab = qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'more'; })[0];
