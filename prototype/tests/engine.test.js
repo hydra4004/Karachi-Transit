@@ -86,6 +86,35 @@ console.log('\n6) union store round trip');
 KTA.sim.setVehicleOps('v_b21_1', { status: 'delayed', delayMin: 12, note: 'test' });
 var ops = KTA.sim.opsFor('v_b21_1');
 ok(ops.status === 'delayed' && ops.delayMin === 12, 'vehicle status persisted');
+var frozenVehicle = KTA.data.VEHICLES.filter(function (v) { return v.id === 'v_b21_2'; })[0];
+var originalNow = Date.now;
+var simulatedNow = originalNow();
+Date.now = function () { return simulatedNow; };
+var positionBeforeStop = KTA.sim.vehicleState(frozenVehicle);
+KTA.sim.setVehicleOps(frozenVehicle.id, { status: 'out_of_service' });
+var stoppedPosition = KTA.sim.vehicleState(frozenVehicle);
+simulatedNow += 60000;
+var stoppedPositionLater = KTA.sim.vehicleState(frozenVehicle);
+ok(stoppedPosition.x === positionBeforeStop.x && stoppedPosition.y === positionBeforeStop.y,
+  'out-of-service vehicle freezes at its position when status changes');
+ok(stoppedPositionLater.x === stoppedPosition.x && stoppedPositionLater.y === stoppedPosition.y,
+  'out-of-service vehicle stays stopped as simulation time advances');
+Date.now = originalNow;
+KTA.sim.setVehicleOps(frozenVehicle.id, { status: 'running' });
+Date.now = function () { return simulatedNow; };
+KTA.store.update(function (st) {
+  st.vehicles[frozenVehicle.id] = {
+    status: 'out_of_service', updatedAt: simulatedNow, delayMin: 0
+  };
+});
+var migratedFrozenPosition = KTA.sim.opsFor(frozenVehicle.id).frozenPosition;
+KTA.store.update(function (st) { st.settings.clockFactor = 12; });
+var migratedPositionAfterClockChange = KTA.sim.vehicleState(frozenVehicle);
+ok(!!migratedFrozenPosition && migratedPositionAfterClockChange.x === migratedFrozenPosition.x &&
+  migratedPositionAfterClockChange.y === migratedFrozenPosition.y,
+  'legacy out-of-service vehicles remain frozen when demo speed changes');
+Date.now = originalNow;
+KTA.sim.setVehicleOps(frozenVehicle.id, { status: 'running' });
 KTA.sim.publishAlert({ routeId: 'r_b21', routeNumber: 'B21', routeName: 'Saddar → Korangi', severity: 'delayed', message: 'test', messageUr: 'test' });
 ok(KTA.sim.alerts().length === 1, 'alert published to the store');
 KTA.sim.submitReport({ type: 'sos', location: { label: 'Saddar' } });

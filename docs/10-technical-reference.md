@@ -102,10 +102,9 @@ The single source of all static content. If the data is wrong, every screen is w
 | `KTA.data.CALLS` | 3 seeded driver phone calls (one breakdown, two delays) | `{ id, vehicleId, name, phone, message, severity, at }` |
 | `KTA.data.REVIEWS` | 5 seeded ratings so averages are not zero | `{ id, targetType, targetId, stars, tags[], comment, at, author }` |
 | `KTA.data.REVIEW_TAGS` | 11 quick tags, each with an English and an Urdu label | `{ id, en, ur }` — e.g. `{ id: 'on_time', en: 'On time', ur: 'وقت پر' }` |
-| `KTA.data.PLACES` | 3 saved places (Home, Work, University) | `{ id, en, ur, stopId }` |
-| `KTA.data.RECENT_SEARCHES` | 4 stop ids shown as recall chips | `['st_jpo', ...]` |
+| `KTA.data.PLACES` | 3 saved-place shortcuts (Home, Work, University) | `{ id, en, ur, stopId }` |
 
-**The map is a 1000x640 schematic**, hand-drawn in route `path` arrays. `x`/`y` are pixel coordinates in that space; `st_ghanta` at `[533, 318]` is the same point on the map whether it is drawn as a stop, used by the ETA model, or hit-tested by a click.
+**The map is a 1000x640 schematic**, hand-drawn in route `path` arrays with decorative local street, coastline, and neighborhood layers. `x`/`y` are pixel coordinates in that space; `st_ghanta` at `[533, 318]` is the same point on the map whether it is drawn as a stop, used by the ETA model, or hit-tested by a click.
 
 A stop's `photo` field names the illustration in `assets.js` (`'clock'`, `'mosque'`, `'pump'`, ...) and its `landmark` / `landmarkUr` fields carry the informal name people actually use.
 
@@ -182,7 +181,7 @@ reset()       -> clear the key and notify
 
 ### 3.6 `prototype/shared/app.css` — the design system (425 lines)
 
-CSS custom properties for colour, radius, shadow and type scale; then shared components: `.card`, `.chip`, `.badge`, `.btn`, `.banner`, `.sheet`, `.phone`, `.tabbar`, `.routechip`, `.eta-card`, `.switch`, `.star`, plus the `body.large-text` and `body.contrast` modifier blocks and the RTL rules.
+CSS custom properties for colour, radius, shadow and type scale; then shared components: `.card`, `.chip`, `.badge`, `.btn`, `.banner`, `.sheet`, `.phone`, `.tabbar`, `.routechip`, `.eta-card`, `.switch`, `.star`, plus the `body.light-mode`, `body.large-text` and `body.contrast` modifier blocks and the RTL rules.
 
 ### 3.7 `prototype/commuter/index.html` — the app shell (210 lines)
 
@@ -236,7 +235,7 @@ The landing page: a card per product, the six-step demo script, the local-servin
 | 4 | Multi-vehicle journey planner | `sim.js` -> `findPlan()` / `buildPlan()`; `commuter/app.js` -> `renderPlanResult()` | BFS over route + walk edges, ranked (section 6.3) |
 | 5 | Step-by-step explanation (explainability) | `sim.js` -> `planFromLegs()` | Every step carries `reasonEn` + `reasonUr` |
 | 6 | SOS with hold + cancel countdown | `commuter/app.js` -> `bindSosButton()`, `startCountdown()`, `cancelSos()` | Timer-driven hold (section 5.3) |
-| 7 | Robbery report (separate from SOS) | `commuter/app.js` -> `openRobberySheet()` | Independent sheet and record type |
+| 7 | Robbery report (separate from SOS) | `commuter/app.js` -> `openRobberySheet()`; `union/portal.js` -> `renderReports()` | Optional bus association; admin report list shows route number and plate |
 | 8 | Driver / vehicle reviews | `commuter/app.js` -> `openReviewSheet()`; `sim.js` -> `submitReview()` | 5 stars + tags + optional comment; running average |
 | 9 | Landmark names and illustrations | `shared/assets.js`; `commuter/app.js` -> `openStopSheet()` | Inline SVG per landmark id |
 | 10 | Urdu / English with RTL | `shared/i18n.js`; `shared/app.css` | `dir` attribute + CSS logical properties |
@@ -244,11 +243,13 @@ The landing page: a card per product, the six-step demo script, the local-servin
 | 12 | Union alerts reaching commuters | `union/portal.js` -> `publish()`; `sim.js` -> `publishAlert()` | Same store, `BroadcastChannel` |
 | 13 | Driver-call log | `union/portal.js` -> `renderCalls()`; `sim.js` -> `acknowledgeCall()` | Call state stored per call id |
 | 14 | Offline: last known position + age | `sim.js` -> `isOffline()`, `offlineAgeSec()`; `commuter/app.js` -> `renderOfflineBanner()`, `etaCardHtml()` | Clock freeze (section 5.4) |
-| 15 | Accessibility (contrast, large text, touch size) | `shared/app.css`; `commuter/app.js` -> `toggleSetting()` | CSS modifier classes |
+| 15 | Light mode and accessibility (contrast, large text, touch size) | `shared/app.css`; `commuter/app.js` -> `toggleSetting()` | Persisted theme setting and CSS modifier classes |
 | 16 | Evaluation logging and export | `shared/eval.js`; `commuter/app.js` -> `renderEvalPanel()` | Event log in `localStorage["kta_eval_v1"]` |
 | 17 | Search by stop / route / area / landmark | `sim.js` -> `search()` | Case-insensitive substring match over several fields |
 | 18 | Map pan and zoom | `commuter/app.js` -> `bindMapEvents()`, `applyView()`, `zoomBy()` | Pointer capture drag + `viewBox` manipulation |
 | 19 | Demo clock (1x / 4x / 12x) | `sim.js` -> `clockFactor()` | Scales simulated minutes |
+| Out-of-service vehicle position | `sim.js` -> `setVehicleOps()`, `vehicleState()` | Saves position at the status change; migrates older records so map refreshes and clock-speed changes do not move the marker |
+| Admin SOS and complaint inbox | `union/portal.js` -> `renderReports()` | Reads commuter reports from the shared store; complaints can carry a route number and bus plate |
 | 20 | Reset demo data | `sim.js` -> `Store.reset()` | Clears the store key |
 
 ---
@@ -342,7 +343,7 @@ Two paths to the same result shape.
 
 **Fallback search** — `buildPlan(from, to)` for any other pair:
 
-1. **Build the graph.** For every route, every ordered pair of its stops becomes a *route edge* (you can ride one vehicle between them). For every stop, every stop within `WALK_LIMIT_PX = 46` pixels becomes a *walk edge* — this is what connects a chinchi point to the bus stop at the same place (e.g. Ghanta Ghar and Saddar Jinnah Post Office).
+1. **Build the graph.** For every route, every ordered pair of its stops becomes a *route edge* (you can ride one vehicle between them). For every stop, every stop within `WALK_LIMIT_PX = 46` pixels becomes a *walk edge* — this is what connects a chinchi point to a nearby bus stop (e.g. Merewether Clock Tower and KPT Head Office).
 2. **Search.** Breadth-first search, maximum depth 4 legs, frontier capped at 600 nodes.
 3. **Rank** the solutions: fewer chinchi legs first (a bus trip is more predictable), then fewer vehicles, then shorter total time.
 4. **Render the steps** in `planFromLegs()`: a *board* card per route leg, a *transfer* card (7 minutes) **only between two route legs**, a *walk* card for walk legs and for the final walk to the destination. Every card carries the stop names and a one-line reason in both languages.
@@ -439,7 +440,7 @@ Substring matching across stop name, Urdu name, area, landmark, route number, ro
 }
 ```
 
-Static data (`STOPS`, `ROUTES`, `VEHICLES`, `PLANS`, `UNIONS`, `CALLS`, `REVIEWS`, `REVIEW_TAGS`, `PLACES`, `RECENT_SEARCHES`) lives in `shared/data.js` and is **read-only** at runtime. The store holds only what a user or an operator changes. That separation is the migration path to a real backend: replace `data.js`, keep the store as the write-through cache.
+Static data (`STOPS`, `ROUTES`, `VEHICLES`, `PLANS`, `UNIONS`, `CALLS`, `REVIEWS`, `REVIEW_TAGS`, `PLACES`) lives in `shared/data.js` and is **read-only** at runtime. The store holds only what a user or an operator changes. That separation is the migration path to a real backend: replace `data.js`, keep the store as the write-through cache.
 
 ---
 
@@ -470,7 +471,7 @@ Static data (`STOPS`, `ROUTES`, `VEHICLES`, `PLANS`, `UNIONS`, `CALLS`, `REVIEWS
 | Concern | Implementation |
 | --- | --- |
 | Design tokens | CSS custom properties in `shared/app.css` (`--ink`, `--bg`, `--brand`, `--danger`, `--radius`, `--shadow`, type scale) |
-| Dark mode | Not implemented; the light theme is tuned for outdoor readability, which is the stated context |
+| Theme | `body.light-mode` switches the full commuter app and map to a persisted light palette; dark remains the default |
 | RTL | `dir="rtl"` on the root element; the layout uses **logical properties** (`margin-inline-start`, `padding-inline`, `border-inline-end`) so it mirrors automatically instead of needing a mirrored stylesheet |
 | Contrast mode | `body.contrast` raises border weights, darkens secondary text and removes low-contrast greys — for sunlight |
 | Large text | `body.large-text` scales the type scale and row heights without breaking layout |
@@ -484,9 +485,9 @@ Static data (`STOPS`, `ROUTES`, `VEHICLES`, `PLANS`, `UNIONS`, `CALLS`, `REVIEWS
 
 | Suite | Type | Checks | Scope |
 | --- | --- | --- | --- |
-| `tests/engine.test.js` | Node | 218 | Data integrity, stop-to-route projection, ETA model, sorted arrivals, planner (prepared + fallback), store round trip, search, reviews |
-| `tests/ui.test.html` | Headless Chrome | 49 | The real commuter app: navigation, route/stop content, map, planner, SOS hold and cancel, robbery report, Urdu RTL, contrast, offline, review sheet |
-| `tests/sync.test.html` | Headless Chrome | 15 | Union portal to commuter app: fleet table, status panel, alert preview, published alert, out-of-service removal from arrivals, call acknowledgement |
+| `tests/engine.test.js` | Node | 221 | Data integrity, stop-to-route projection, ETA model, sorted arrivals, planner (prepared + fallback), store round trip, search, reviews |
+| `tests/ui.test.html` | Headless Chrome | 88 | The real commuter app: navigation, route/stop content, map, responsive home/planner layout, SOS hold and cancel, robbery report, Urdu RTL, contrast, offline, review sheet |
+| `tests/sync.test.html` | Headless Chrome | 25 | Union portal to commuter app: status updates and frozen map marker, legacy-position migration, report inbox, bus identification on complaints |
 | `tests/run-tests.ps1` | PowerShell | — | Starts a local server, runs all three, stops the server, prints a summary |
 
 **How the browser tests work**: a test page loads the app in an `<iframe>`, then drives it with real DOM events (`MouseEvent`, `PointerEvent`) and asserts on the resulting DOM. The union portal and the commuter app are two iframes on the same origin, so `localStorage` and the `storage` event connect them exactly as they would in two real tabs.

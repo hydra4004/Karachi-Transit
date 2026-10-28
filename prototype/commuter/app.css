@@ -4,6 +4,7 @@
 
 /* quick action grid ------------------------------------------------------ */
 .screen[data-screen="home"] .screen-pad { padding: 16px 16px 24px; }
+.screen[data-screen="home"] #homeQuick { margin-bottom: 20px; }
 .screen[data-screen="home"] .searchbar .input {
   min-height: 52px;
   border-radius: 12px;
@@ -31,25 +32,25 @@
   flex-direction: column;
   overflow: hidden;
   padding-bottom: 0;
-  background: linear-gradient(180deg, #0d1f1d 0%, #081713 100%);
+  background: var(--map-background);
 }
 .screen[data-screen="map"] .appbar {
   flex: 0 0 auto;
-  background: rgba(10, 20, 18, .92);
-  border-bottom-color: rgba(161, 177, 170, .22);
+  background: var(--surface);
+  border-bottom-color: var(--line);
 }
 .screen[data-screen="map"] .mapwrap {
   flex: 1 1 0;
   min-height: 0;
-  background: #0a1716;
+  background: var(--map-background);
 }
 .screen[data-screen="map"] .mapchips {
   flex: 0 0 auto;
   max-height: 32%;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: rgba(10, 20, 18, .97);
-  border-top-color: rgba(161, 177, 170, .2);
+  background: var(--surface);
+  border-top-color: var(--line);
 }
 .screen[data-screen="map"].plan-picking .mapchips { display: none; }
 #mapSvg {
@@ -66,14 +67,39 @@
 }
 #mapSvg .map-road,
 #mapSvg .map-grid {
-  stroke: rgba(255, 255, 255, .08);
+  stroke: var(--map-road);
+}
+.screen[data-screen="map"] .map-banner {
+  inset-inline-start: 12px;
+  inset-inline-end: 68px;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  pointer-events: none;
+}
+.screen[data-screen="map"] .map-banner .banner { pointer-events: auto; }
+.screen[data-screen="map"] .map-legend {
+  border-radius: 14px;
+  padding: 10px 12px 6px;
+  box-shadow: var(--shadow);
+}
+.screen[data-screen="map"] .map-controls {
+  border-radius: 18px;
+  padding: 6px;
+}
+.screen[data-screen="map"] .map-controls button {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-weight: 600;
 }
 .map-legend {
-  background: rgba(10, 20, 18, .8);
-  border: 1px solid rgba(161, 177, 170, .14);
-  color: #edf4f2;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
 }
-.map-banner { background: rgba(11, 20, 18, .9); }
+.map-banner { background: var(--surface); }
+body.light-mode #mapSvg .map-road,
+body.light-mode #mapSvg .map-grid { stroke: var(--map-road); }
 body.contrast .screen[data-screen="map"].active,
 body.contrast .screen[data-screen="map"] .appbar,
 body.contrast .screen[data-screen="map"] .mapwrap,
@@ -85,7 +111,7 @@ body.contrast .screen[data-screen="map"] .map-banner {
 }
 body.contrast #mapSvg { background: var(--map-background); }
 body.contrast #mapSvg .map-road,
-body.contrast #mapSvg .map-grid { stroke: rgba(15, 23, 42, .16); }
+body.contrast #mapSvg .map-grid { stroke: var(--map-road); }
 .plan-stop {
   text-align: start;
   cursor: pointer;
@@ -95,6 +121,16 @@ body.contrast #mapSvg .map-grid { stroke: rgba(15, 23, 42, .16); }
   padding-inline: 12px;
 }
 .plan-stop:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.plan-route-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+.plan-route-fields .field { min-width: 0; }
+.plan-swap {
+  justify-self: center;
+  margin-bottom: 12px;
+}
 .btn.plan-cancel { min-height: 44px; }
 .stop-dot:focus-visible { stroke: var(--ink); stroke-width: 4; }
 
@@ -255,6 +291,15 @@ a.btn { text-decoration: none; }
   .quick-grid { grid-template-columns: 1fr; }
 }
 
+@container (min-width: 520px) {
+  .plan-route-fields {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    column-gap: 12px;
+  }
+  .plan-route-fields .field { margin-bottom: 12px; }
+  .plan-swap { margin-bottom: 12px; }
+}
+
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   body:not(.contrast) .screen:not([data-screen="map"]) .appbar,
   body:not(.contrast) .screen[data-screen="home"] .quick,
@@ -275,8 +320,8 @@ a.btn { text-decoration: none; }
     box-shadow: 0 8px 24px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .1);
   }
 
-  body:not(.contrast) .screen[data-screen="map"] .appbar,
-  body:not(.contrast) .screen[data-screen="map"] .mapchips {
+  body:not(.contrast):not(.light-mode) .screen[data-screen="map"] .appbar,
+  body:not(.contrast):not(.light-mode) .screen[data-screen="map"] .mapchips {
     background-color: rgba(10, 20, 18, .68);
   }
 }
@@ -293,7 +338,7 @@ a.btn { text-decoration: none; }
   }
   #mapSvg { background: var(--map-background); }
   #mapSvg .map-road,
-  #mapSvg .map-grid { stroke: rgba(15, 23, 42, .16); }
+  #mapSvg .map-grid { stroke: var(--map-road); }
   .screen[data-screen="map"] .appbar,
   .screen[data-screen="map"] .mapchips {
     background: var(--surface);

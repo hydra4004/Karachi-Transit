@@ -35,41 +35,35 @@
                 <span class="sub" data-i18n="app.tagline"></span>
               </div>
               <button class="iconbtn" id="btnLangQuick" title="Language" aria-label="Language">EN</button>
-              <button class="iconbtn" id="btnSosTop" title="SOS" aria-label="SOS"></button>
             </div>
             <div class="screen-pad">
+              <div id="homeQuick">
+                <div class="section-title" data-i18n="home.quick">Quick actions</div>
+                <div class="quick-grid">
+                  <button class="quick" id="qaPlan"><span class="qi" id="qiPlan"></span><span data-i18n="home.planTrip">Plan a trip</span></button>
+                  <button class="quick danger" id="qaSos"><span class="qi" id="qiSos"></span><span data-i18n="home.sos">SOS</span></button>
+                  <button class="quick warn" id="qaRobbery"><span class="qi" id="qiRobbery"></span><span data-i18n="home.robbery">Complaint</span></button>
+                  <button class="quick" id="qaTrack"><span class="qi" id="qiTrack"></span><span data-i18n="home.track">Track a bus</span></button>
+                </div>
+              </div>
+
               <div id="offlineBanner"></div>
               <div id="homeAlerts"></div>
 
               <div class="searchbar">
                 <span id="searchIcon"></span>
                 <input class="input" id="q" type="search" autocomplete="off"
-                       data-i18n-placeholder="home.searchHint" placeholder="Search a stop, route number or area">
+                       data-i18n-placeholder="home.searchHint" placeholder="Search a stop, route number or area"
+                       aria-label="Search stops, routes, or areas">
               </div>
               <div id="homeResults"></div>
 
               <div class="section-title" data-i18n="home.nearYou">Next buses near you</div>
               <div id="homeNearby"></div>
 
-              <div class="section-title" data-i18n="home.quick">Quick actions</div>
-              <div class="quick-grid">
-                <button class="quick" id="qaPlan"><span class="qi" id="qiPlan"></span><span data-i18n="home.planTrip">Plan a trip</span></button>
-                <button class="quick danger" id="qaSos"><span class="qi" id="qiSos"></span><span data-i18n="home.sos">SOS</span></button>
-                <button class="quick warn" id="qaRobbery"><span class="qi" id="qiRobbery"></span><span data-i18n="home.robbery">Complaint</span></button>
-                <button class="quick" id="qaTrack"><span class="qi" id="qiTrack"></span><span data-i18n="home.track">Track a bus</span></button>
-              </div>
-
               <div class="section-title" data-i18n="home.savedPlaces">Saved places</div>
               <div class="chiprow" id="homePlaces"></div>
 
-              <div class="section-title" data-i18n="home.recent">Recent searches</div>
-              <div class="chiprow" id="homeRecent"></div>
-
-              <div class="section-title row between">
-                <span data-i18n="home.popular">Popular routes</span>
-                <button class="link" id="linkAllRoutes" data-i18n="home.allRoutes">See all routes</button>
-              </div>
-              <div id="homeRoutes"></div>
             </div>
           </section>
 
@@ -79,21 +73,22 @@
               <button class="iconbtn" id="btnMapBack" style="display:none"></button>
               <div class="grow">
                 <h2 data-i18n="map.title">Live map</h2>
-                <span class="sub" id="mapSub"></span>
+                <span class="sub" data-i18n="map.subtitle">Pan and zoom to explore simulated routes across Karachi</span>
               </div>
               <button class="iconbtn" id="btnMapAlerts" title="Alerts"></button>
             </div>
-            <div class="mapwrap" style="position:relative;flex:1 1 auto;overflow:hidden">
-              <svg class="mapsvg" id="mapSvg" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="mapwrap">
+              <svg class="mapsvg" id="mapSvg" viewBox="0 0 1000 640" preserveAspectRatio="xMidYMid meet"
+                   role="group" aria-label="Interactive schematic map of simulated Karachi transit routes"></svg>
               <div class="map-banner" id="mapBanner"></div>
               <div class="map-controls">
-                <button id="mapIn" title="Zoom in">+</button>
-                <button id="mapOut" title="Zoom out">&minus;</button>
-                <button id="mapFit" title="Fit">&loz;</button>
+                <button id="mapIn" title="Zoom in" aria-label="Zoom in">+</button>
+                <button id="mapOut" title="Zoom out" aria-label="Zoom out">&minus;</button>
+                <button id="mapFit" title="Reset map view" aria-label="Reset map view">&loz;</button>
               </div>
               <div class="map-legend">
-                <div class="lg"><span class="dot" style="background:#8a919b"></span><span data-i18n="map.bus">Bus</span></div>
-                <div class="lg"><span class="dot" style="background:#b1b8bf"></span><span data-i18n="map.chinchi">Chinchi</span></div>
+                <div class="lg"><span class="dot" style="background:#2563eb"></span><span data-i18n="map.bus">Bus</span></div>
+                <div class="lg"><span class="dot" style="background:#15803d"></span><span data-i18n="map.chinchi">Chinchi</span></div>
               </div>
             </div>
             <div class="mapchips" id="mapChips"></div>
@@ -153,15 +148,17 @@
             </div>
             <div class="screen-pad">
               <div class="card">
-                <div class="field">
-                  <label for="planFrom" data-i18n="plan.origin">Starting from</label>
-                  <button type="button" class="input plan-stop" id="planFrom" data-plan-pick="from"></button>
+                <div class="plan-route-fields">
+                  <div class="field">
+                    <label for="planFrom" data-i18n="plan.origin">Starting from</label>
+                    <button type="button" class="input plan-stop" id="planFrom" data-plan-pick="from"></button>
+                  </div>
+                  <button class="iconbtn plan-swap" id="btnSwap" aria-label="Swap starting point and destination"></button>
+                  <div class="field">
+                    <label for="planTo" data-i18n="plan.destination">Going to</label>
+                    <button type="button" class="input plan-stop" id="planTo" data-plan-pick="to"></button>
+                  </div>
                 </div>
-                <div class="field">
-                  <label for="planTo" data-i18n="plan.destination">Going to</label>
-                  <button type="button" class="input plan-stop" id="planTo" data-plan-pick="to"></button>
-                </div>
-                <button class="iconbtn" id="btnSwap" style="position:absolute;inset-inline-end:28px;margin-top:-56px;z-index:2"></button>
                 <button class="btn primary" id="btnPlan" data-i18n="plan.find">Find journey</button>
               </div>
               <div class="section-title" data-i18n="plan.alternatives">Other journeys</div>
@@ -206,7 +203,7 @@
           </section>
 
           <!-- ============================================================ TABS -->
-          <nav class="tabbar" id="tabbar"></nav>
+          <nav class="tabbar" id="tabbar" aria-label="Primary navigation"></nav>
 
           <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
           <div class="toast" id="toast"></div>

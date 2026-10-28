@@ -84,8 +84,23 @@
       alerts: [],       /* published commuter-facing alerts                   */
       reports: [],      /* SOS + robbery reports                             */
       reviews: [],      /* user submitted reviews                            */
-      settings: { lang: 'en', clockFactor: 4, largeText: false, contrast: false, offline: false, offlineSince: null },
+      settings: { lang: 'en', clockFactor: 4, largeText: false, contrast: false, lightMode: false, offline: false, offlineSince: null },
       session: { startedAt: null }
+    };
+  }
+
+  function positionAt(v, at, settings) {
+    var route = routeById(v.routeId);
+    if (!route) return null;
+    var now = at;
+    if (settings.offline && settings.offlineSince) now = Math.min(now, settings.offlineSince);
+    var factor = settings.clockFactor || 1;
+    var t = ((v.phase + ((now - EPOCH) / 60000) * factor * v.speed) % 1 + 1) % 1;
+    var point = KTA.geo.pointAt(route.path, route._cum, t);
+    var next = KTA.geo.pointAt(route.path, route._cum, t + 0.004);
+    return {
+      t: t, x: point.x, y: point.y,
+      heading: Math.atan2(next.y - point.y, next.x - point.x) * 180 / Math.PI
     };
   }
 
@@ -100,6 +115,18 @@
           if (parsed[k] === undefined) parsed[k] = base[k];
         });
         parsed.settings = Object.assign(base.settings, parsed.settings || {});
+        var migrated = false;
+        Object.keys(parsed.vehicles || {}).forEach(function (vid) {
+          var ops = parsed.vehicles[vid];
+          var vehicle = vehicleById(vid);
+          if (ops.status !== 'out_of_service' || ops.frozenPosition || !vehicle) return;
+          var frozen = positionAt(vehicle, ops.updatedAt || Date.now(), parsed.settings);
+          if (frozen) {
+            ops.frozenPosition = frozen;
+            migrated = true;
+          }
+        });
+        if (migrated && root.localStorage) root.localStorage.setItem(STORE_KEY, JSON.stringify(parsed));
         return parsed;
       } catch (e) { return defaultState(); }
     },
@@ -171,12 +198,13 @@
   }
 
   /* simulated minutes since EPOCH */
-  function simMinutes() {
+  function simMinutesAt(now) {
     var s = Store.read().settings;
-    var now = Date.now();
     if (s.offline && s.offlineSince) now = Math.min(now, s.offlineSince);
     return ((now - EPOCH) / 60000) * clockFactor();
   }
+
+  function simMinutes() { return simMinutesAt(Date.now()); }
 
   var routeIndex = {};
   KTA.data.ROUTES.forEach(function (r) {
@@ -220,6 +248,20 @@
     var pt = KTA.geo.pointAt(route.path, route._cum, t);
     var next = KTA.geo.pointAt(route.path, route._cum, t + 0.004);
     var heading = Math.atan2(next.y - pt.y, next.x - pt.x) * 180 / Math.PI;
+    if (ops.status === 'out_of_service') {
+      var frozen = ops.frozenPosition;
+      if (!frozen) {
+        var stoppedAt = ops.updatedAt || Date.now();
+        t = ((v.phase + simMinutesAt(stoppedAt) * v.speed) % 1 + 1) % 1;
+        pt = KTA.geo.pointAt(route.path, route._cum, t);
+        next = KTA.geo.pointAt(route.path, route._cum, t + 0.004);
+        heading = Math.atan2(next.y - pt.y, next.x - pt.x) * 180 / Math.PI;
+      } else {
+        t = frozen.t;
+        pt = { x: frozen.x, y: frozen.y };
+        heading = frozen.heading;
+      }
+    }
     var live = route.track === 'live' && ops.status !== 'out_of_service' && !isOffline();
     /* a couple of vehicles have a stale tracker to demonstrate IR5 */
     var stale = (v.id === 'v_b13_2');
@@ -341,7 +383,19 @@
   }
   function setVehicleOps(vid, patch) {
     Store.update(function (s) {
-      s.vehicles[vid] = Object.assign({}, s.vehicles[vid] || {}, patch, { updatedAt: Date.now(), updatedBy: 'union-portal' });
+      var current = s.vehicles[vid] || { status: 'running' };
+      var updated = Object.assign({}, current, patch, { updatedAt: Date.now(), updatedBy: 'union-portal' });
+      if (updated.status === 'out_of_service') {
+        if (current.status !== 'out_of_service' || !current.frozenPosition) {
+          var vehicle = vehicleById(vid);
+          if (vehicle) {
+            updated.frozenPosition = positionAt(vehicle, Date.now(), s.settings);
+          }
+        }
+      } else {
+        delete updated.frozenPosition;
+      }
+      s.vehicles[vid] = updated;
     });
   }
 
@@ -349,6 +403,13 @@
   function reports() { return (Store.read().reports || []).slice(); }
   function submitReport(report) {
     Store.update(function (s) {
+      var vehicle = report.vehicleId ? vehicleById(report.vehicleId) : null;
+      if (vehicle) {
+        var route = routeById(vehicle.routeId);
+        report.routeId = vehicle.routeId;
+        report.routeNumber = route ? route.number : null;
+        report.plate = vehicle.plate;
+      }
       report.id = 'rp_' + Date.now();
       report.at = Date.now();
       report.status = 'received';
@@ -367,8 +428,8 @@
    * Two kinds of edge:
    *   route leg — stay on one vehicle between two of its stops
    *   walk leg  — move between two stops that are within a short walk
-   *               (e.g. the chinchi point at Ghanta Ghar and the bus stop at
-   *                Saddar Jinnah Post Office are the same place)
+   *               (e.g. the chinchi point at Merewether Clock Tower and the
+   *                KPT Head Office bus stop are nearby)
    * The search prefers fewer vehicles, then fewer chinchi legs, because a bus
    * trip is more predictable than a chinchi trip. Every generated step names
    * the stop and explains the choice (explainability, IR6). */

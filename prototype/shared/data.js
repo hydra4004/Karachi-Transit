@@ -1,12 +1,14 @@
 /* ============================================================================
  * Karachi Transit App — Simulated transit dataset (Phase 2 prototype)
  * ----------------------------------------------------------------------------
- * All data here is SIMULATED. Route corridors follow well-known Karachi
- * corridors (Saddar, Bahadurabad, University Road, Korangi, Sea View ...) but
- * stop lists, timings and vehicle positions are simplified for the prototype.
+ * All service data here is SIMULATED. Major landmark labels were checked
+ * against Google Maps; informal pickup points and map positions remain
+ * approximate, and do not represent verified transit stops or GPS coordinates.
+ * Route corridors follow well-known Karachi corridors but are simplified.
  * Replace with union-provided data in Phase 3 if available.
  *
- * Coordinate system: schematic map, 1000 x 640 "map units".
+ * Coordinate system: schematic 1000 x 640 projection of checked landmark pins
+ * and approximate area centers. Map units are not GPS coordinates.
  * ==========================================================================*/
 (function (root) {
   'use strict';
@@ -19,68 +21,68 @@
    */
   var STOPS = [
     /* --- bus stops (formal) --- */
-    { id: 'st_jpo',       name: 'Saddar (Jinnah Post Office)', ur: 'سادر (جناح پوسٹ آفس)', area: 'Saddar',
-      kind: 'formal', mode: 'bus', x: 520, y: 330, landmark: 'Jinnah Post Office clock tower', landmarkUr: 'جناح پوسٹ آفس گھنٹہ گھر', photo: 'clock' },
+    { id: 'st_jpo',       name: 'Saddar GPO', ur: 'صدر جی پی او', area: 'Saddar',
+      kind: 'formal', mode: 'bus', x: 97, y: 345, landmark: 'Saddar General Post Office', landmarkUr: 'صدر جنرل پوسٹ آفس', photo: 'office' },
     { id: 'st_empress',   name: 'Empress Market', ur: 'ایمپریس مارکیٹ', area: 'Saddar',
-      kind: 'formal', mode: 'bus', x: 480, y: 290, landmark: 'Empress Market main entrance', landmarkUr: 'ایمپریس مارکیٹ داخلی راستہ', photo: 'market' },
+      kind: 'formal', mode: 'bus', x: 99, y: 335, landmark: 'Empress Market main entrance', landmarkUr: 'ایمپریس مارکیٹ داخلی راستہ', photo: 'market' },
     { id: 'st_chund',     name: 'I.I. Chundrigar Road', ur: 'آئی آئی چندریگر روڈ', area: 'CBD',
-      kind: 'formal', mode: 'bus', x: 570, y: 348, landmark: 'KPT building corner', landmarkUr: 'کے پی ٹی بلڈنگ کا کونا', photo: 'office' },
+      kind: 'formal', mode: 'bus', x: 8, y: 376, landmark: 'KPT Head Office', landmarkUr: 'کے پی ٹی ہیڈ آفس', photo: 'office' },
     { id: 'st_ned',       name: 'NED University', ur: 'این ای ڈی یونیورسٹی', area: 'University Road',
-      kind: 'formal', mode: 'bus', x: 600, y: 280, landmark: 'NED main gate', landmarkUr: 'این ای ڈی مین گیٹ', photo: 'gate' },
-    { id: 'st_liaq',      name: 'Liaquatabad (Nimki)', ur: 'لیاقت آباد (نمکی)', area: 'Liaquatabad',
-      kind: 'formal', mode: 'bus', x: 560, y: 210, landmark: 'Nimki junction', landmarkUr: 'نمکی جنکشن', photo: 'chowk' },
-    { id: 'st_gol',       name: 'Gol Market (Shahrah-e-Pakistan)', ur: 'گول مارکیٹ (شاہراہ پاکستان)', area: 'Shahrah-e-Pakistan',
-      kind: 'formal', mode: 'bus', x: 430, y: 320, landmark: 'Gol Market signal', landmarkUr: 'گول مارکیٹ سگنل', photo: 'market' },
-    { id: 'st_nazimabad', name: 'Nazimabad No. 4', ur: 'نظیم آباد نمبر 4', area: 'Nazimabad',
-      kind: 'formal', mode: 'bus', x: 400, y: 250, landmark: 'Four Chowk', landmarkUr: 'فار چوراکہ', photo: 'chowk' },
-    { id: 'st_north',     name: 'North Karachi Ph-II', ur: 'نارتھ کراچی فیز 2', area: 'North Karachi',
-      kind: 'formal', mode: 'bus', x: 300, y: 150, landmark: 'Five Star Chowk', landmarkUr: 'فائیو اسٹار چوراکہ', photo: 'chowk' },
-    { id: 'st_sf',        name: 'Shahrah-e-Faisal (Hasan Square)', ur: 'شاہراہ فیصل (حسن اسکوئر)', area: 'Saddar',
-      kind: 'formal', mode: 'bus', x: 570, y: 250, landmark: 'Hasan Square flyover ramp', landmarkUr: 'حسن اسکوئر فلائی اوور رمپ', photo: 'flyover' },
-    { id: 'st_qai',       name: 'Quaid-e-Azam Interchange', ur: 'قائد اعظم انٹر چینج', area: 'Saddar',
-      kind: 'formal', mode: 'bus', x: 640, y: 160, landmark: 'Quaid-e-Azam flyover pillar 12', landmarkUr: 'قائد اعظم فلائی اوور پلر 12', photo: 'flyover' },
-    { id: 'st_airport',   name: 'Airport (Terminal Approach)', ur: 'ایئرپورٹ (ٹرمینل اپروچ)', area: 'Airport',
-      kind: 'formal', mode: 'bus', x: 700, y: 60, landmark: 'Terminal 1 road', landmarkUr: 'ٹرمینل 1 روڈ', photo: 'terminal' },
-    { id: 'st_clifton',   name: 'Clifton (Khayaban-e-Jinnah)', ur: 'کلیفٹن (خیابانِ جنا)', area: 'Clifton',
-      kind: 'formal', mode: 'bus', x: 500, y: 450, landmark: 'Sea Breeze Plaza', landmarkUr: 'سی بریز پلازہ', photo: 'beach' },
-    { id: 'st_seaview',   name: 'Sea View (Sea View Road)', ur: 'سی ویو (سی ویو روڈ)', area: 'Sea View',
-      kind: 'formal', mode: 'bus', x: 420, y: 530, landmark: 'Sea View roundabout', landmarkUr: 'سی ویو راؤنڈ ایباؤٹ', photo: 'beach' },
+      kind: 'formal', mode: 'bus', x: 331, y: 173, landmark: 'NED main gate', landmarkUr: 'این ای ڈی مین گیٹ', photo: 'gate' },
+    { id: 'st_liaq',      name: 'Liaquatabad (Nimco)', ur: 'لیاقت آباد (نمکو)', area: 'Liaquatabad',
+      kind: 'formal', mode: 'bus', x: 144, y: 234, landmark: 'Liaquatabad Nimco area', landmarkUr: 'لیاقت آباد نمکو کا علاقہ', photo: 'chowk' },
+    { id: 'st_gol',       name: 'Gol Market, Nazimabad', ur: 'گول مارکیٹ، ناظم آباد', area: 'Nazimabad',
+      kind: 'formal', mode: 'bus', x: 90, y: 210, landmark: 'Gol Market, Nazimabad', landmarkUr: 'گول مارکیٹ، ناظم آباد', photo: 'market' },
+    { id: 'st_nazimabad', name: 'Nazimabad No. 4 area', ur: 'ناظم آباد نمبر ۴ کا علاقہ', area: 'Nazimabad',
+      kind: 'formal', mode: 'bus', x: 121, y: 206, landmark: 'Approximate Nazimabad No. 4 area', landmarkUr: 'ناظم آباد نمبر ۴ کا اندازاً علاقہ', photo: 'chowk' },
+    { id: 'st_north',     name: 'Five Star Chowrangi, North Nazimabad', ur: 'فائیو اسٹار چورنگی، نارتھ ناظم آباد', area: 'North Nazimabad',
+      kind: 'formal', mode: 'bus', x: 151, y: 141, landmark: 'Five Star Chowrangi', landmarkUr: 'فائیو اسٹار چورنگی', photo: 'chowk' },
+    { id: 'st_sf',        name: 'Hasan Square', ur: 'حسن اسکوائر', area: 'Gulshan-e-Iqbal',
+      kind: 'formal', mode: 'bus', x: 218, y: 240, landmark: 'Hasan Square area', landmarkUr: 'حسن اسکوائر کا علاقہ', photo: 'flyover' },
+    { id: 'st_qai',       name: 'Shahrah-e-Faisal (Airport Corridor)', ur: 'شاہراہ فیصل (ایئرپورٹ کوریڈور)', area: 'Airport Corridor',
+      kind: 'formal', mode: 'bus', x: 408, y: 266, landmark: 'Approximate airport-bound Shahrah-e-Faisal corridor', landmarkUr: 'شاہراہ فیصل پر ایئرپورٹ کی سمت کا اندازاً راستہ', photo: 'flyover' },
+    { id: 'st_airport',   name: 'Jinnah International Airport', ur: 'جناح انٹرنیشنل ایئرپورٹ', area: 'Airport',
+      kind: 'formal', mode: 'bus', x: 469, y: 244, landmark: 'Airport terminal access road', landmarkUr: 'ایئرپورٹ ٹرمینل تک رسائی کی سڑک', photo: 'terminal' },
+    { id: 'st_clifton',   name: 'Clifton', ur: 'کلفٹن', area: 'Clifton',
+      kind: 'formal', mode: 'bus', x: 92, y: 426, landmark: 'Clifton near Sea Breeze Centre', landmarkUr: 'سی بریز سینٹر کے قریب کلفٹن', photo: 'beach' },
+    { id: 'st_seaview',   name: 'Sea View Beach', ur: 'سی ویو بیچ', area: 'Sea View',
+      kind: 'formal', mode: 'bus', x: 49, y: 485, landmark: 'Sea View beachfront', landmarkUr: 'سی ویو ساحل', photo: 'beach' },
     { id: 'st_pechs',     name: 'PECHS Block 6', ur: 'پی ایچ ایس بلاک 6', area: 'PECHS',
-      kind: 'formal', mode: 'bus', x: 670, y: 300, landmark: 'PECHS Block 6 bus bay', landmarkUr: 'پی ایچ ایس بلاک 6 بَس بے', photo: 'office' },
-    { id: 'st_bahadur',   name: 'Bahadurabad (Peshwari Chowk)', ur: 'بہادر آباد (پشواری چوراکہ)', area: 'Bahadurabad',
-      kind: 'formal', mode: 'bus', x: 680, y: 230, landmark: 'Peshwari Chowk', landmarkUr: 'پشواری چوراکہ', photo: 'chowk' },
+      kind: 'formal', mode: 'bus', x: 203, y: 334, landmark: 'PECHS Block 6 area', landmarkUr: 'پی ای سی ایچ ایس بلاک ۶ کا علاقہ', photo: 'office' },
+    { id: 'st_bahadur',   name: 'Bahadurabad Chowrangi', ur: 'بہادرآباد چورنگی', area: 'Bahadurabad',
+      kind: 'formal', mode: 'bus', x: 197, y: 295, landmark: 'Bahadurabad Chowrangi', landmarkUr: 'بہادرآباد چورنگی', photo: 'chowk' },
     { id: 'st_uni',       name: 'University Road (Nipa Stop)', ur: 'یونیورسٹی روڈ (نیپا اسٹاپ)', area: 'University Road',
-      kind: 'formal', mode: 'bus', x: 700, y: 170, landmark: 'Nipa stop shelter', landmarkUr: 'نیپا اسٹاپ شیلٹر', photo: 'gate' },
-    { id: 'st_gulshan',   name: 'Gulshan-e-Hadeed', ur: 'گلشن ہدید', area: 'Gulshan-e-Hadeed',
-      kind: 'formal', mode: 'bus', x: 790, y: 130, landmark: 'Hadeed Chowk', landmarkUr: 'ہدید چوراکہ', photo: 'chowk' },
+      kind: 'formal', mode: 'bus', x: 282, y: 202, landmark: 'NIPA Chowrangi bus stop', landmarkUr: 'نیپا چورنگی بس اسٹاپ', photo: 'gate' },
+    { id: 'st_gulshan',   name: 'Gulshan-e-Hadeed', ur: 'گلشنِ حدید', area: 'Gulshan-e-Hadeed',
+      kind: 'formal', mode: 'bus', x: 984, y: 323, landmark: 'Gulshan-e-Hadeed area', landmarkUr: 'گلشنِ حدید کا علاقہ', photo: 'chowk' },
     { id: 'st_fedb',      name: 'Federal B Area', ur: 'فیڈرل بی ایریا', area: 'Federal B Area',
-      kind: 'formal', mode: 'bus', x: 780, y: 330, landmark: 'Federal B Area main road', landmarkUr: 'فیڈرل بی ایریا مین روڈ', photo: 'office' },
-    { id: 'st_korangi',   name: 'Korangi (Area 4)', ur: 'کorangی (ایریا 4)', area: 'Korangi',
-      kind: 'formal', mode: 'bus', x: 900, y: 320, landmark: 'Korangi Area 4 turning', landmarkUr: 'کorangی ایریا 4 ٹرننگ', photo: 'chowk' },
+      kind: 'formal', mode: 'bus', x: 205, y: 188, landmark: 'Federal B Area', landmarkUr: 'فیڈرل بی ایریا', photo: 'office' },
+    { id: 'st_korangi',   name: 'Korangi No. 4', ur: 'کورنگی نمبر ۴', area: 'Korangi',
+      kind: 'formal', mode: 'bus', x: 442, y: 425, landmark: 'Korangi No. 4 area', landmarkUr: 'کورنگی نمبر ۴ کا علاقہ', photo: 'chowk' },
     { id: 'st_malir',     name: 'Malir Halt', ur: 'مالر ہالٹ', area: 'Malir',
-      kind: 'formal', mode: 'bus', x: 880, y: 470, landmark: 'Malir railway halt gate', landmarkUr: 'مالر ریلوے ہالٹ گیٹ', photo: 'gate' },
+      kind: 'formal', mode: 'bus', x: 488, y: 284, landmark: 'Malir Halt bus stop', landmarkUr: 'ملیر ہالٹ بس اسٹاپ', photo: 'gate' },
 
     /* --- chinchi points (informal, landmark-based) --- */
-    { id: 'st_ghanta',    name: 'Ghanta Ghar (Clock Tower)', ur: 'گھنٹہ گھر چوراکہ', area: 'Saddar',
-      kind: 'informal', mode: 'chinchi', x: 533, y: 318, landmark: 'Ghanta Ghar clock tower', landmarkUr: 'گھنٹہ گھر کی گھڑی', photo: 'clock' },
+    { id: 'st_ghanta',    name: 'Merewether Clock Tower', ur: 'میری ویدر کلاک ٹاور', area: 'Seari Quarters',
+      kind: 'informal', mode: 'chinchi', x: 19, y: 372, landmark: 'Merewether Clock Tower', landmarkUr: 'میری ویدر کلاک ٹاور', photo: 'clock' },
     { id: 'st_kmc',       name: 'KMC Office Chowk', ur: 'کی ایم سی آفس چوراکہ', area: 'Saddar',
-      kind: 'informal', mode: 'chinchi', x: 570, y: 336, landmark: 'KMC office building', landmarkUr: 'کی ایم سی آفس بلڈنگ', photo: 'office' },
-    { id: 'st_seabreeze', name: 'Sea Breeze Corner', ur: 'سی بریز کونا', area: 'Clifton',
-      kind: 'informal', mode: 'chinchi', x: 520, y: 400, landmark: 'Sea Breeze corner shop', landmarkUr: 'سی بریز کونہ دکان', photo: 'beach' },
-    { id: 'st_askari',    name: 'Askari VIII Chowk', ur: 'اسکری 8 چوراکہ', area: 'Clifton',
-      kind: 'informal', mode: 'chinchi', x: 500, y: 470, landmark: 'Askari VIII roundabout', landmarkUr: 'اسکری 8 راؤنڈ ایباؤٹ', photo: 'chowk' },
-    { id: 'st_svr',       name: 'Sea View Roundabout', ur: 'سی ویو راؤنڈ ایباؤٹ', area: 'Sea View',
-      kind: 'informal', mode: 'chinchi', x: 420, y: 530, landmark: 'Sea View roundabout', landmarkUr: 'سی ویو راؤنڈ ایباؤٹ', photo: 'beach' },
-    { id: 'st_nipa',      name: 'Beverly Hills (Nipa Corner)', ur: 'بیورلی ہلز (نیپا کونا)', area: 'University Road',
-      kind: 'informal', mode: 'chinchi', x: 706, y: 186, landmark: 'Beverly Hills bakery', landmarkUr: 'بیورلی ہلز بیکری', photo: 'shop' },
-    { id: 'st_peshwari',  name: 'Peshwari Naan Corner', ur: 'پشواری نان کونا', area: 'Bahadurabad',
-      kind: 'informal', mode: 'chinchi', x: 674, y: 244, landmark: 'Peshwari naan shop', landmarkUr: 'پشواری نان دکان', photo: 'shop' },
-    { id: 'st_pechs2',    name: 'PECHS Block 2 Market', ur: 'پی ایچ ایس بلاک 2 مارکیٹ', area: 'PECHS',
-      kind: 'informal', mode: 'chinchi', x: 660, y: 316, landmark: 'Block 2 vegetable market', landmarkUr: 'بلاک 2 سبزی مارکیٹ', photo: 'market' },
-    { id: 'st_bhattigate',name: 'Bhatti Gate', ur: 'بھٹی گیٹ', area: 'Saddar',
-      kind: 'informal', mode: 'chinchi', x: 505, y: 305, landmark: 'Bhatti Gate roundabout', landmarkUr: 'بھٹی گیٹ راؤنڈ ایباؤٹ', photo: 'gate' },
-    { id: 'st_newkhi',    name: 'New Karachi Railway Crossing', ur: 'نیو کراچی ریلوے کراسنگ', area: 'New Karachi',
-      kind: 'informal', mode: 'chinchi', x: 360, y: 215, landmark: 'Railway crossing gate', landmarkUr: 'ریلوے کراسنگ گیٹ', photo: 'gate' }
+      kind: 'informal', mode: 'chinchi', x: 50, y: 354, landmark: 'Karachi Metropolitan Corporation Building', landmarkUr: 'کراچی میٹروپولیٹن کارپوریشن کی عمارت', photo: 'office' },
+    { id: 'st_seabreeze', name: 'Sea Breeze Centre', ur: 'سی بریز سینٹر', area: 'Clifton',
+      kind: 'informal', mode: 'chinchi', x: 97, y: 427, landmark: 'Sea Breeze Centre, Clifton', landmarkUr: 'سی بریز سینٹر، کلفٹن', photo: 'beach' },
+    { id: 'st_askari',    name: 'Do Darya', ur: 'دو دریا', area: 'DHA Phase 8',
+      kind: 'informal', mode: 'chinchi', x: 255, y: 614, landmark: 'Do Darya', landmarkUr: 'دو دریا', photo: 'chowk' },
+    { id: 'st_svr',       name: 'Sea View Road (chinchi point)', ur: 'سی ویو روڈ (چنچی پوائنٹ)', area: 'Sea View',
+      kind: 'informal', mode: 'chinchi', x: 66, y: 485, landmark: 'Approximate Sea View Road pickup area', landmarkUr: 'سی ویو روڈ پر اندازاً پک اَپ کا علاقہ', photo: 'beach' },
+    { id: 'st_nipa',      name: 'NIPA Chowrangi (chinchi point)', ur: 'نیپا چورنگی (چنچی پوائنٹ)', area: 'University Road',
+      kind: 'informal', mode: 'chinchi', x: 285, y: 203, landmark: 'NIPA Chowrangi', landmarkUr: 'نیپا چورنگی', photo: 'shop' },
+    { id: 'st_peshwari',  name: 'Peshawari Ice Cream, Bahadurabad', ur: 'پشاوری آئس کریم، بہادرآباد', area: 'Bahadurabad',
+      kind: 'informal', mode: 'chinchi', x: 205, y: 289, landmark: 'Approximate Peshawari Ice Cream area', landmarkUr: 'پشاوری آئس کریم کا اندازاً علاقہ', photo: 'shop' },
+    { id: 'st_pechs2',    name: 'PECHS Block 2', ur: 'پی ای سی ایچ ایس بلاک ۲', area: 'PECHS',
+      kind: 'informal', mode: 'chinchi', x: 192, y: 330, landmark: 'PECHS Block 2 area', landmarkUr: 'پی ای سی ایچ ایس بلاک ۲ کا علاقہ', photo: 'market' },
+    { id: 'st_bhattigate',name: 'Regal Chowk, Saddar', ur: 'ریگل چوک، صدر', area: 'Saddar',
+      kind: 'informal', mode: 'chinchi', x: 90, y: 344, landmark: 'Regal Chowk (approximate pickup area)', landmarkUr: 'ریگل چوک (اندازاً پک اَپ کا علاقہ)', photo: 'gate' },
+    { id: 'st_newkhi',    name: 'New Karachi (railway-side area)', ur: 'نیو کراچی (ریلوے کے قریب کا علاقہ)', area: 'New Karachi',
+      kind: 'informal', mode: 'chinchi', x: 158, y: 25, landmark: 'Approximate New Karachi area near the railway', landmarkUr: 'ریلوے کے قریب نیو کراچی کا اندازاً علاقہ', photo: 'gate' }
   ];
 
   /* ----------------------------------------------------------------- routes
@@ -91,43 +93,43 @@
   var ROUTES = [
     { id: 'r_b13', number: 'B13', type: 'bus', name: 'Sea View → Gulshan-e-Hadeed', ur: 'سی ویو تا گلشن ہدید',
       operator: 'Karachi Bus Route Association (KBRA)', track: 'live', headwayMin: 12, speedKmh: 24, fare: 30,
-      path: [[420,530],[460,495],[500,450],[540,420],[600,400],[640,350],[670,300],[680,255],[680,230],[690,200],[700,170],[745,150],[790,130]],
+      path: [[49,485],[92,426],[150,380],[203,334],[197,295],[240,245],[282,202],[480,220],[720,270],[984,323]],
       stopIds: ['st_seaview','st_clifton','st_pechs','st_bahadur','st_uni','st_gulshan'] },
 
     { id: 'r_b21', number: 'B21', type: 'bus', name: 'Saddar → Korangi', ur: 'سادر تا کorangی',
       operator: 'Karachi Bus Route Association (KBRA)', track: 'live', headwayMin: 15, speedKmh: 22, fare: 25,
-      path: [[520,330],[545,342],[570,348],[610,335],[640,318],[670,300],[705,315],[745,326],[780,330],[835,325],[900,320]],
+      path: [[97,345],[8,376],[100,360],[203,334],[205,188],[300,260],[442,425]],
       stopIds: ['st_jpo','st_chund','st_pechs','st_fedb','st_korangi'] },
 
-    { id: 'r_b1', number: 'B1', type: 'bus', name: 'NED University → North Karachi', ur: 'این ای ڈی یونیورسٹی تا نارتھ کراچی',
+    { id: 'r_b1', number: 'B1', type: 'bus', name: 'NED University → North Nazimabad', ur: 'این ای ڈی یونیورسٹی تا نارتھ ناظم آباد',
       operator: 'Karachi Bus Route Association (KBRA)', track: 'live', headwayMin: 20, speedKmh: 20, fare: 20,
-      path: [[600,280],[575,240],[560,210],[530,245],[490,272],[430,320],[400,255],[355,195],[300,150]],
+      path: [[331,173],[144,234],[90,210],[121,206],[151,141]],
       stopIds: ['st_ned','st_liaq','st_gol','st_nazimabad','st_north'] },
 
     { id: 'r_b5', number: 'B5', type: 'bus', name: 'Saddar → Airport', ur: 'سادر تا ایئرپورٹ',
       operator: 'Karachi Bus Route Association (KBRA)', track: 'estimated', headwayMin: 25, speedKmh: 21, fare: 25,
-      path: [[520,330],[500,310],[480,290],[520,272],[570,250],[610,215],[635,175],[660,120],[685,85],[700,60]],
+      path: [[97,345],[99,335],[218,240],[330,250],[408,266],[469,244]],
       stopIds: ['st_jpo','st_empress','st_sf','st_qai','st_airport'] },
 
     { id: 'r_b22', number: 'B22', type: 'bus', name: 'Gulshan-e-Hadeed → Malir Halt', ur: 'گلشن ہدید تا مالر ہالٹ',
       operator: 'WASA Bus Service / Private Operators', track: 'live', headwayMin: 30, speedKmh: 25, fare: 35,
-      path: [[790,130],[748,152],[700,170],[685,205],[672,245],[680,285],[710,310],[748,325],[780,330],[820,380],[855,425],[880,470]],
+      path: [[984,323],[720,250],[488,284],[330,230],[282,202],[205,188]],
       stopIds: ['st_gulshan','st_uni','st_fedb','st_malir'] },
 
-    { id: 'r_c1', number: 'C1', type: 'chinchi', name: 'Chinchi: Ghanta Ghar → Sea View', ur: 'چنچی: گھنٹہ گھر تا سی ویو',
+    { id: 'r_c1', number: 'C1', type: 'chinchi', name: 'Chinchi: Merewether Clock Tower → Sea View', ur: 'چنچی: میری ویدر کلاک ٹاور تا سی ویو',
       operator: 'Sindh Chinchi Drivers Union (SCDU)', track: 'estimated', headwayMin: 6, speedKmh: 17, fare: 40,
-      path: [[533,318],[570,336],[600,362],[578,395],[545,420],[520,440],[500,470],[462,505],[420,530]],
+      path: [[19,372],[50,354],[97,427],[160,510],[255,614],[160,550],[66,485]],
       stopIds: ['st_ghanta','st_kmc','st_seabreeze','st_askari','st_svr'] },
 
     { id: 'r_c2', number: 'C2', type: 'chinchi', name: 'Chinchi: University Road → PECHS', ur: 'چنچی: یونیورسٹی روڈ تا پی ایچ ایس',
       operator: 'Sindh Chinchi Drivers Union (SCDU)', track: 'estimated', headwayMin: 8, speedKmh: 16, fare: 35,
-      path: [[706,186],[690,210],[674,244],[658,278],[660,316],[638,344],[612,362]],
+      path: [[285,203],[205,289],[192,330]],
       stopIds: ['st_nipa','st_peshwari','st_pechs2'] },
 
-    { id: 'r_c3', number: 'C3', type: 'chinchi', name: 'Chinchi: Saddar → North Karachi', ur: 'چنچی: سادر تا نارتھ کراچی',
+    { id: 'r_c3', number: 'C3', type: 'chinchi', name: 'Chinchi: Saddar → New Karachi', ur: 'چنچی: صدر تا نیو کراچی',
       operator: 'Sindh Chinchi Drivers Union (SCDU)', track: 'estimated', headwayMin: 7, speedKmh: 18, fare: 45,
-      path: [[533,318],[505,305],[460,296],[430,320],[398,288],[360,215],[300,150]],
-      stopIds: ['st_ghanta','st_bhattigate','st_gol','st_newkhi','st_north'] }
+      path: [[19,372],[90,344],[90,210],[151,141],[158,25]],
+      stopIds: ['st_ghanta','st_bhattigate','st_gol','st_north','st_newkhi'] }
   ];
 
   /* --------------------------------------------------------------- vehicles
@@ -221,7 +223,7 @@
     },
     {
       id: 'plan_ghanta_clifton', from: 'st_ghanta', to: 'st_clifton',
-      title: 'Ghanta Ghar → Clifton (chinchi)', titleUr: 'گھنٹہ گھر تا کلیفٹن (چنچی)', totalMin: 18, walkMin: 2, cost: 40,
+      title: 'Merewether Clock Tower → Clifton (chinchi)', titleUr: 'میری ویدر کلاک ٹاور تا کلفٹن (چنچی)', totalMin: 18, walkMin: 2, cost: 40,
       steps: [
         { kind: 'board', mode: 'chinchi', routeId: 'r_c1', vehicle: 'C1', fromStop: 'st_ghanta', toStop: 'st_seabreeze',
           min: 14, fare: 40, reasonEn: 'C1 runs on this corridor all day and is the fastest option for a short trip.',
@@ -241,15 +243,13 @@
     },
     {
       id: 'plan_jpo_north', from: 'st_jpo', to: 'st_north',
-      title: 'Saddar → North Karachi', titleUr: 'سادر تا نارتھ کراچی', totalMin: 55, walkMin: 3, cost: 60,
+      title: 'Saddar → Five Star Chowrangi, North Nazimabad', titleUr: 'صدر تا فائیو اسٹار چورنگی، نارتھ ناظم آباد', totalMin: 34, walkMin: 3, cost: 45,
       steps: [
-        { kind: 'board', mode: 'chinchi', routeId: 'r_c3', vehicle: 'C3', fromStop: 'st_ghanta', toStop: 'st_newkhi',
-          min: 24, fare: 45, reasonEn: 'C3 starts near Saddar and avoids the long queue for B1.',
-          reasonUr: 'C3 سادر کے قریب شروع ہوتی ہے اور B1 کی لمبی قطار سے بچاتی ہے۔' },
-        { kind: 'walk', min: 3, toStop: 'st_newkhi', reasonEn: 'Walk to the railway crossing.', reasonUr: 'ریلوے کراسنگ تک پیدل۔' },
-        { kind: 'board', mode: 'bus', routeId: 'r_b1', vehicle: 'B1', fromStop: 'st_newkhi', toStop: 'st_north',
-          min: 24, fare: 20, reasonEn: 'B1 terminates at North Karachi Ph-II.',
-          reasonUr: 'B1 کا آخری اسٹاپ نارتھ کراچی فیز 2 ہے۔' }
+        { kind: 'walk', min: 3, toStop: 'st_bhattigate', reasonEn: 'Walk from Saddar GPO to the Regal Chowk pickup point.',
+          reasonUr: 'صدر جی پی او سے ریگل چوک پک اَپ پوائنٹ تک پیدل جائیں۔' },
+        { kind: 'board', mode: 'chinchi', routeId: 'r_c3', vehicle: 'C3', fromStop: 'st_bhattigate', toStop: 'st_north',
+          min: 31, fare: 45, reasonEn: 'C3 serves Five Star Chowrangi in North Nazimabad.',
+          reasonUr: 'C3 نارتھ ناظم آباد میں فائیو اسٹار چورنگی تک جاتی ہے۔' }
       ]
     }
   ];
@@ -299,13 +299,10 @@
     { id: 'pl_work', type: 'work', en: 'Work', ur: 'دفتر', stopId: 'st_pechs' },
     { id: 'pl_campus', type: 'custom', en: 'University', ur: 'یونیورسٹی', stopId: 'st_ned' }
   ];
-
-  var RECENT_SEARCHES = ['st_jpo', 'st_gulshan', 'st_seaview', 'st_north'];
-
   KTA.data = {
     STOPS: STOPS, ROUTES: ROUTES, VEHICLES: VEHICLES, PLANS: PLANS,
     UNIONS: UNIONS, REVIEWS: REVIEWS, REVIEW_TAGS: REVIEW_TAGS,
-    PLACES: PLACES, RECENT_SEARCHES: RECENT_SEARCHES,
+    PLACES: PLACES,
     mapSize: { w: 1000, h: 640 }
   };
 

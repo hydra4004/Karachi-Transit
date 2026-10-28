@@ -28,6 +28,10 @@ function q(sel) { return app.contentDocument.querySelector(sel); }
 function qa(sel) { return Array.prototype.slice.call(app.contentDocument.querySelectorAll(sel)); }
 function text(sel) { var e = q(sel); return e ? e.textContent.trim() : ''; }
 function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', { bubbles: true })); }
+function overlaps(a, b) {
+  var x = a.getBoundingClientRect(), y = b.getBoundingClientRect();
+  return x.left < y.right && x.right > y.left && x.top < y.bottom && x.bottom > y.top;
+}
 
 (async function () {
   app = document.getElementById('app');
@@ -39,6 +43,26 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
   /* --- shell --- */
   ok(qa('#tabbar button').length === 5, 'tab bar has 5 tabs');
   ok(!!q('.screen[data-screen="home"].active'), 'home screen is active on load');
+  app.style.width = '360px';
+  await sleep(50);
+  var homeQuickBottom = q('#homeQuick .quick-grid').getBoundingClientRect().bottom;
+  var homeSearchTop = q('.screen[data-screen="home"] .searchbar').getBoundingClientRect().top;
+  ok(homeSearchTop - homeQuickBottom >= 16, 'mobile home separates quick actions from search by at least 16px');
+  app.style.width = '1280px';
+  q('.phone').style.width = '760px';
+  await sleep(50);
+  homeQuickBottom = q('#homeQuick .quick-grid').getBoundingClientRect().bottom;
+  homeSearchTop = q('.screen[data-screen="home"] .searchbar').getBoundingClientRect().top;
+  ok(homeSearchTop - homeQuickBottom >= 16, 'desktop home separates quick actions from search by at least 16px');
+  q('.phone').style.removeProperty('width');
+  app.style.width = '420px';
+  ok(qa('#tabbar button[aria-current="page"]').length === 1 &&
+    q('#tabbar button[aria-current="page"]').getAttribute('data-tab') === 'home',
+    'primary navigation exposes exactly one current destination');
+  ok(q('.screen[data-screen="home"] .screen-pad').firstElementChild.id === 'homeQuick',
+    'quick actions are the first content on the home page');
+  ok(!q('#homeRecent') && !q('#homeRoutes') && !q('#btnSosTop'),
+    'home avoids duplicate route lists, static recent-search chips, and a duplicate SOS shortcut');
   ok(text('#qaRobbery') === 'Complaint', 'home action is labeled Complaint');
   var nearbyRoutes = qa('#homeNearby .eta-card').map(function (card) {
     return card.querySelector('.routechip').textContent.trim();
@@ -54,6 +78,9 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
   ok(app.contentWindow.getComputedStyle(q('#tabbar')).backdropFilter.indexOf('blur') !== -1 &&
     app.contentWindow.getComputedStyle(q('#homeNearby .eta-card')).backdropFilter === 'none',
     'navigation uses liquid glass while arrival content stays clear');
+  ok(app.contentWindow.getComputedStyle(q('#q')).backdropFilter === 'none' &&
+    app.contentWindow.getComputedStyle(q('#homePlaces .chip')).backdropFilter === 'none',
+    'search and saved-place controls stay opaque for legibility');
   doc.body.classList.add('contrast');
   var warningIconStyle = app.contentWindow.getComputedStyle(q('#qiRobbery'));
   ok(warningIconStyle.color !== warningIconStyle.backgroundColor,
@@ -80,7 +107,37 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
   ok(!!q('.screen[data-screen="map"].active'), 'route map button opens the live map');
   ok(qa('#mapSvg .route-line').length === 8, 'map draws all 8 route lines');
   ok(qa('#mapSvg .veh').length > 10, 'map draws the vehicles (' + qa('#mapSvg .veh').length + ')');
+  ok(qa('#mapSvg .map-road').length >= 7 && qa('#mapSvg .map-park').length === 2,
+    'map adds subtle road and neighborhood context below transit routes');
+  ok(qa('#mapSvg .veh[role="button"][tabindex="0"]').length === qa('#mapSvg .veh').length,
+    'every vehicle marker is named and keyboard focusable');
+  ok(q('#mapIn').getAttribute('aria-label') === 'Zoom in' &&
+    app.contentWindow.getComputedStyle(q('#mapIn')).width === '48px',
+    'map controls have clear accessible labels and generous touch targets');
   ok(!q('.map-legend [data-i18n="map.oos"]'), 'map legend only lists public transport modes');
+  ok(app.contentWindow.getComputedStyle(q('.map-legend [data-i18n="map.bus"]').previousElementSibling).backgroundColor === 'rgb(37, 99, 235)' &&
+    app.contentWindow.getComputedStyle(q('.map-legend [data-i18n="map.chinchi"]').previousElementSibling).backgroundColor === 'rgb(21, 128, 61)',
+    'map legend colors match the bus and chinchi route lines');
+  ok(text('.screen[data-screen="map"] .appbar .sub').indexOf('Approximate landmarks') !== -1,
+    'map explains that landmarks are approximate and route positions are simulated');
+  var mapStopsMatchRoutes = app.contentWindow.KTA.data.ROUTES.every(function (route) {
+    var points = route.path.map(function (point) { return point.join(','); });
+    return route.stopIds.every(function (id) {
+      var stop = app.contentWindow.KTA.data.STOPS.filter(function (candidate) { return candidate.id === id; })[0];
+      return stop && points.indexOf(stop.x + ',' + stop.y) !== -1;
+    });
+  });
+  ok(mapStopsMatchRoutes, 'every simulated route line passes through its listed stop markers');
+  var fiveStar = app.contentWindow.KTA.data.STOPS.filter(function (stop) { return stop.id === 'st_north'; })[0];
+  var hadeed = app.contentWindow.KTA.data.STOPS.filter(function (stop) { return stop.id === 'st_gulshan'; })[0];
+  ok(fiveStar.name.indexOf('North Nazimabad') !== -1 && fiveStar.x < 200 && fiveStar.y < 200 &&
+    hadeed.x > 950 && hadeed.y < 400,
+    'corrected Google Maps areas place Five Star north-west and Gulshan-e-Hadeed far east');
+  var northPlan = app.contentWindow.KTA.sim.findPlan('st_jpo', 'st_north');
+  ok(northPlan && northPlan.steps.length === 2 &&
+    northPlan.steps[1].routeId === 'r_c3' && northPlan.steps[1].fromStop === 'st_bhattigate' &&
+    northPlan.steps[1].toStop === 'st_north',
+    'Saddar-to-Five-Star plan uses the corrected Regal Chowk to North Nazimabad segment');
   ok(app.contentWindow.getComputedStyle(doc.body).colorScheme === 'dark' &&
     app.contentWindow.getComputedStyle(q('#mapSvg .map-background')).fill === 'rgb(10, 23, 22)',
     'normal mode uses a dark palette for the map and native controls');
@@ -103,10 +160,19 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
   click(stopDot);
   await sleep(250);
   ok(!!q('#scrim.open'), 'tapping a chinchi point opens the stop sheet');
-  ok(q('#sheet').textContent.indexOf('Ghanta') !== -1, 'stop sheet names the landmark stop');
+  ok(q('#sheet').textContent.indexOf('Merewether') !== -1, 'stop sheet names the landmark stop');
   ok(!!q('#sheet .landmark-svg'), 'stop sheet shows the landmark illustration (FR9)');
   click(q('#scrim'));
   await sleep(150);
+  var vehicleMarker = q('#mapSvg .veh');
+  vehicleMarker.dispatchEvent(new app.contentWindow.KeyboardEvent('keydown', {
+    key: 'Enter', bubbles: true, cancelable: true
+  }));
+  await sleep(150);
+  ok(!!q('#scrim.open') && q('#sheet').textContent.indexOf(vehicleMarker.getAttribute('aria-label').split(', ')[1]) !== -1,
+    'keyboard activation opens the focused vehicle details');
+  click(q('#scrim'));
+  await sleep(100);
 
   /* --- map route filter (multi-select) --- */
   click(qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'map'; })[0]);
@@ -172,16 +238,50 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
   ok(!q('#rbTypes') && !q('#rbAmount'), 'complaint form has no category or amount field');
   q('#rbSubject').value = 'Phone theft';
   q('#rbDesc').value = 'A phone was taken near the stop.';
+  q('#rbVehicle').value = 'v_b13_1';
   q('#robberyForm').dispatchEvent(new app.contentWindow.Event('submit', { bubbles: true, cancelable: true }));
   await sleep(250);
   ok(q('#safetyBody').textContent.indexOf('Phone theft') !== -1 &&
     q('#safetyBody').textContent.indexOf('A phone was taken') !== -1,
     'the submitted complaint appears in My reports');
+  var userComplaint = app.contentWindow.KTA.sim.reports()[0];
+  ok(userComplaint.vehicleId === 'v_b13_1' && userComplaint.routeNumber === 'B13',
+    'complaints can be associated with a bus and retain its route number');
 
   /* planner map selection */
   click(planTab);
   await sleep(250);
   ok(!q('#stopList') && !!q('#planFrom[data-plan-pick="from"]'), 'planner uses map selection instead of a stop dropdown');
+  app.style.width = '360px';
+  await sleep(50);
+  ok(!overlaps(q('#btnSwap'), q('#planFrom')) && !overlaps(q('#btnSwap'), q('#planTo')) &&
+    q('#btnSwap').getBoundingClientRect().top >= q('#planFrom').getBoundingClientRect().bottom &&
+    q('#planTo').getBoundingClientRect().top >= q('#btnSwap').getBoundingClientRect().bottom,
+    'mobile planner swap control sits between the origin and destination without overlap');
+  app.style.width = '1280px';
+  q('.phone').style.width = '760px';
+  await sleep(50);
+  var originRect = q('#planFrom').getBoundingClientRect();
+  var swapRect = q('#btnSwap').getBoundingClientRect();
+  var destinationRect = q('#planTo').getBoundingClientRect();
+  ok(!overlaps(q('#btnSwap'), q('#planFrom')) && !overlaps(q('#btnSwap'), q('#planTo')) &&
+    originRect.right < swapRect.left && swapRect.right < destinationRect.left,
+    'desktop planner aligns the swap control between fields without overlap');
+  doc.documentElement.setAttribute('dir', 'rtl');
+  doc.body.classList.add('rtl');
+  await sleep(50);
+  originRect = q('#planFrom').getBoundingClientRect();
+  swapRect = q('#btnSwap').getBoundingClientRect();
+  destinationRect = q('#planTo').getBoundingClientRect();
+  ok(!overlaps(q('#btnSwap'), q('#planFrom')) && !overlaps(q('#btnSwap'), q('#planTo')) &&
+    originRect.left > swapRect.right && swapRect.left > destinationRect.right,
+    'desktop RTL planner keeps the swap control between fields without overlap');
+  doc.documentElement.setAttribute('dir', 'ltr');
+  doc.body.classList.remove('rtl');
+  ok(q('#btnSwap').getAttribute('aria-label') === 'Swap starting point and destination',
+    'planner swap control has a descriptive accessible label');
+  q('.phone').style.removeProperty('width');
+  app.style.width = '420px';
   click(q('#planFrom'));
   await sleep(250);
   ok(!!q('.screen[data-screen="map"].plan-picking') && qa('#mapSvg [data-stop]').length === 30,
@@ -193,20 +293,33 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
     q('#mapSvg [data-stop="st_nipa"]').getAttribute('tabindex') === '0', 'map stops are keyboard focusable controls');
   click(q('#mapSvg [data-stop="st_nipa"]'));
   await sleep(250);
-  ok(!!q('.screen[data-screen="plan"].active') && q('#planFrom').textContent.indexOf('Beverly Hills') !== -1,
-    'selecting an existing Beverly Hills stop returns it once to the planner');
+  ok(!!q('.screen[data-screen="plan"].active') && q('#planFrom').textContent.indexOf('NIPA Chowrangi') !== -1,
+    'selecting the verified NIPA landmark returns it once to the planner');
   click(q('#planTo'));
   await sleep(250);
   q('#mapSvg [data-stop="st_seabreeze"]').dispatchEvent(new app.contentWindow.KeyboardEvent('keydown', {
     key: 'Enter', bubbles: true, cancelable: true
   }));
   await sleep(250);
-  ok(q('#planTo').textContent.indexOf('Sea Breeze Corner') !== -1, 'keyboard activation selects a destination stop');
+  ok(q('#planTo').textContent.indexOf('Sea Breeze Centre') !== -1, 'keyboard activation selects a destination stop');
+  var originName = q('#planFrom').textContent;
+  var destinationName = q('#planTo').textContent;
+  click(q('#btnSwap'));
+  await sleep(100);
+  ok(q('#planFrom').textContent === destinationName && q('#planTo').textContent === originName,
+    'planner swap control still exchanges the selected origin and destination');
 
   /* --- language + RTL --- */
   var moreTab = qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'more'; })[0];
   click(moreTab);
   await sleep(250);
+  var switches = qa('#moreBody [data-setting]');
+  ok(switches.length > 0 && switches.every(function (sw) {
+    return sw.tagName === 'BUTTON' && sw.getAttribute('role') === 'switch' &&
+      /^(true|false)$/.test(sw.getAttribute('aria-checked'));
+  }), 'settings are native, keyboard-operable switches with announced state');
+  ok(q('#tabbar button[aria-current="page"]').getAttribute('data-tab') === 'more',
+    'tab selection remains announced after navigation');
   var urBtn = qa('#moreBody [data-lang]').filter(function (b) { return b.getAttribute('data-lang') === 'ur'; })[0];
   click(urBtn);
   await sleep(400);
@@ -215,6 +328,29 @@ function click(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click', 
   click(q('#btnLangQuick'));
   await sleep(400);
   ok(doc.documentElement.getAttribute('dir') === 'ltr', 'switching back returns to left-to-right');
+
+  /* --- light theme --- */
+  var lightMode = qa('#moreBody [data-setting]').filter(function (b) { return b.getAttribute('data-setting') === 'lightMode'; })[0];
+  click(lightMode);
+  await sleep(200);
+  lightMode = qa('#moreBody [data-setting]').filter(function (b) { return b.getAttribute('data-setting') === 'lightMode'; })[0];
+  ok(doc.body.classList.contains('light-mode') &&
+    app.contentWindow.getComputedStyle(doc.body).colorScheme === 'light' &&
+    app.contentWindow.getComputedStyle(doc.body).backgroundColor === 'rgb(243, 246, 244)' &&
+    lightMode.getAttribute('aria-checked') === 'true',
+    'light mode applies a persistent light palette');
+  var mapTabForTheme = qa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'map'; })[0];
+  click(mapTabForTheme);
+  await sleep(250);
+  ok(app.contentWindow.getComputedStyle(q('#mapSvg .map-background')).fill === 'rgb(233, 241, 247)',
+    'light mode applies the light palette to the map');
+  ok(app.contentWindow.getComputedStyle(q('.screen[data-screen="map"] .appbar')).backgroundColor !== 'rgba(10, 20, 18, 0.68)',
+    'light mode keeps the map controls on a light surface');
+  click(moreTab);
+  await sleep(200);
+  lightMode = qa('#moreBody [data-setting]').filter(function (b) { return b.getAttribute('data-setting') === 'lightMode'; })[0];
+  click(lightMode);
+  await sleep(150);
 
   /* --- accessibility --- */
   var contrast = qa('#moreBody [data-setting]').filter(function (b) { return b.getAttribute('data-setting') === 'contrast'; })[0];

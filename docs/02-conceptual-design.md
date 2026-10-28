@@ -25,8 +25,8 @@ One shared store keeps the two prototypes consistent: what the union publishes i
 
 | Tab | Purpose | Screens | Requirements |
 | --- | --- | --- | --- |
-| **Home** | Orient the user in one screen: what is coming, what is broken, where do I usually go | Home, Alerts, Route detail, Stop detail, Safety | FR1, FR2, FR3, FR5, FR8 |
-| **Map** | Where is everything right now | Map (live vehicles, route lines, stop points, pan/zoom, filter chips) | FR2, FR3, FR9 |
+| **Home** | Orient the user: current alerts, a broad search, the next nearby arrivals, and saved-place shortcuts | Home, Alerts, Route detail, Stop detail, Safety | FR1, FR2, FR3, FR5, FR8 |
+| **Map** | Where is everything right now | Map (simulated vehicles, route lines, stop points, pan/zoom, filter chips, area context) | FR2, FR3, FR9 |
 | **Routes** | The full network as a browsable list | Routes list (bus/chinchi filter, search), Route detail (stop list, vehicles, reviews) | FR1, FR6, IR1 |
 | **Plan** | Get me there, possibly with two vehicles | Planner input, Journey result (step cards), Transfer step | FR4, IR6 |
 | **More** | Settings, language, accessibility, saved places, demo controls | More (language, accessibility, places, clock, connection, evaluation mode, reset) | FR10, IR4, IR5, NFR2 |
@@ -70,8 +70,8 @@ Satisfies FR7, FR8.
 
 | # | Screen | Key elements | Element ids |
 | --- | --- | --- | --- |
-| 1 | Home | alert banner, search field, 4 quick actions, saved places, recent searches, next arrivals, popular routes | `#homeAlerts` `#q` `#qaPlan` `#qaTrack` `#qaSos` `#qaRobbery` `#homePlaces` `#homeRecent` `#homeNearby` `#homeRoutes` |
-| 2 | Map | schematic SVG map: area labels, 8 route polylines, 30 stop points, live vehicles, filter chips, zoom | `#mapSvg` `.route-line` `.stop-dot` `.veh` `#mapChips` `#mapIn` `#mapOut` |
+| 1 | Home | alert banner, search field, 4 quick actions, next arrivals, saved-place shortcuts | `#homeAlerts` `#q` `#qaPlan` `#qaTrack` `#qaSos` `#qaRobbery` `#homePlaces` `#homeNearby` |
+| 2 | Map | schematic SVG map: area labels, neighborhood texture, 8 route polylines, 30 stop points, simulated vehicles, filter chips, zoom | `#mapSvg` `.map-road` `.route-line` `.stop-dot` `.veh` `#mapChips` `#mapIn` `#mapOut` |
 | 3 | Stop sheet | stop name, landmark name, landmark illustration, live/estimated badge, next arrivals, "plan from here" | `#sheet` `.landmark-svg` |
 | 4 | Vehicle sheet | plate, model, driver, occupancy, status, delay, rating, rate button | `#sheet` |
 | 5 | Routes | filter chips (All/Bus/Chinchi), search, 8 route cards | `#routeList` `#routeFilters` |
@@ -122,7 +122,7 @@ Data lives in `prototype/shared/data.js` (static, simulated) and `localStorage["
 Two paths, same result shape:
 
 1. **Prepared plans** (`data.js` → `PLANS`) for the pairs used in the evaluation, so a tester always gets a sensible, narrated journey.
-2. **Fallback search** (`buildPlan`) for any other pair: a breadth-first search over a graph whose edges are *route legs* (stay on one vehicle between two of its stops) and *walk legs* (two stops within 46 px of each other, e.g. the chinchi point at Ghanta Ghar and the bus stop at Saddar Jinnah Post Office).
+2. **Fallback search** (`buildPlan`) for any other pair: a breadth-first search over a graph whose edges are *route legs* (stay on one vehicle between two of its stops) and *walk legs* (two stops within 46 px of each other, e.g. the chinchi point near Merewether Clock Tower and the bus stop near KPT Head Office).
 
 Ranking prefers fewer chinchi legs, then fewer vehicles, then shorter time, because a bus trip is more predictable than a chinchi trip. Every generated step carries the stop names and a one-line reason in English and Urdu, which is what Phase 1 finding F9 asked for.
 

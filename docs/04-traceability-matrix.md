@@ -7,14 +7,14 @@
 | Waits with no idea when the vehicle arrives | F1, F2 | FR2, FR3, IR2 | Visibility of system status | ETA card with Live or Estimated badge and update time | Home "Next arrivals" (`#homeNearby`), Map (`#mapSvg`), Stop sheet |
 | Cannot plan a trip that needs two vehicles | F3 | FR4, IR6 | Reduce cognitive load | One step per card with board, ride and get-off stops | Plan tab → journey result (`#planResult`) |
 | Does not trust an AI-made route | F9 | IR6 | Explainability, recognition over recall | Each step names the stop and why to change | Journey step cards, `reasonEn` / `reasonUr` in `sim.js` |
-| Learns routes by asking strangers | F4 | FR1, IR1 | Recognition over recall, efficiency | Route list with search by number, stop or destination, in 3 taps | Home → Routes → route detail |
+| Learns routes by asking strangers | F4 | FR1, IR1 | Recognition over recall, efficiency | One route list with search by number, stop or destination; Home keeps saved places and nearby arrivals | Routes → route detail |
 | Feels unsafe, fears accidental or missed alerts | F5 | FR5, IR3 | Error prevention, user control | Hold-to-confirm SOS with cancel countdown | Safety screen (`#sosBtn`, `#sosCount`, `#btnCancelSos`) |
 | Cannot judge a driver or vehicle before boarding | F5 | FR6, IR7 | Consistency, efficiency | Star rating plus quick tags, under 15 seconds | Review sheet (`#sheet [data-star]`, `[data-tag]`) |
 | Chinchi stops have no formal names | F6 | FR9 | Match with the real world | Landmark name, illustration and Urdu label | Stop sheet (`.landmark-svg`), Stop detail |
 | Prefers Urdu labels | F7 | FR10 | Accessibility and localization | Language toggle with right-to-left layout | More → Language, `#btnLangQuick`, every screen |
 | No warning about breakdowns | F1 | FR7, FR8 | Visibility, feedback | Union status change becomes a route alert | Union portal Fleet + publish, commuter alert banner (`#homeAlerts`) |
 | Cannot tell if a position is still current | F2 | IR5 | Help users recover from errors | Last known position with its age | Offline banner (`#offlineBanner`), "Last known" badge |
-| Needs to use the phone in bright sun with one hand | Context of use | IR4 | Accessibility and localization | Large touch targets, bottom actions, high-contrast mode | `body.contrast`, `body.large-text`, 48 px targets |
+| Needs to use the phone in bright sun with one hand | Context of use | IR4 | Accessibility and localization | Large touch targets, keyboard/screen-reader controls, reduced-transparency support, high-contrast mode | `body.contrast`, `body.large-text`, settings switches, map controls |
 | Cannot judge whether the SOS was really sent | F5 | FR5 | Feedback | "Report received" screen with stop and time | Safety screen after submit (`#safetyBody`) |
 
 ## 2. Requirement → implementation → verification
@@ -60,7 +60,7 @@ Every requirement is linked to the code that implements it and to the automated 
 | F1 — no information while waiting | FR2, FR3, FR8, IR2 | Live map, ETA cards, union alert banner |
 | F2 — cannot tell when a vehicle arrives | FR3, IR2, IR5 | Live/Estimated badge + update age |
 | F3 — multi-vehicle trips are hard | FR4, IR1, IR6 | Journey planner with step cards |
-| F4 — routes learned by asking people | FR1, IR1 | Routes list, search, saved places, recent searches |
+| F4 — routes learned by asking people | FR1, IR1 | Routes list, search, saved places |
 | F5 — safety concerns | FR5, FR6, IR3, IR7 | SOS hold + countdown, robbery report, review sheet |
 | F6 — informal chinchi stops | FR9 | Landmark name + illustration in the stop sheet |
 | F7 — Urdu preferred | FR10 | Language toggle, full RTL layout |

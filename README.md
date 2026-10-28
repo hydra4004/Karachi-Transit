@@ -28,7 +28,7 @@ Then open <http://localhost:8080/> for the launcher and the demo script.
 powershell -ExecutionPolicy Bypass -File prototype\tests\run-tests.ps1
 ```
 
-282 automated checks: 218 on the data and simulation engine, 49 driving the real commuter app in a browser, and 15 on the union-portal → commuter-app sync.
+334 automated checks: 221 on the data and simulation engine, 88 driving the real commuter app in a browser, and 25 on the union-portal → commuter-app sync.
 
 ## Repository map
 

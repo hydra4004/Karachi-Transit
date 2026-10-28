@@ -45,12 +45,12 @@ Open `prototype/commuter/index.html` directly. Everything except the cross-app s
 
 1. **Home** — show the search field, the four quick actions, the next arrivals with a **Live** badge and "updated Ns ago", and any union alert banner.
 2. **Routes → B13** — open the route, read the six stops and the three vehicles, show the reviews.
-3. **Map** — pan and zoom, tap the chinchi point at **Ghanta Ghar** to open the stop sheet with the landmark illustration, then tap a vehicle to see the plate, driver and rating.
-4. **Plan** — set *Saddar Jinnah Post Office* → *Gulshan-e-Hadeed*; read the four step cards, including the reason for the change at the transfer stop.
+3. **Map** — pan and zoom, tap the chinchi point at **Merewether Clock Tower** to open the stop sheet with the landmark illustration, then tap a vehicle to see the plate, driver and rating. Landmark locations are approximate and the routes/vehicle positions are simulated.
+4. **Plan** — set *Saddar GPO* → *Gulshan-e-Hadeed*; read the four step cards, including the reason for the change at the transfer stop.
 5. **Safety** — hold the SOS button for two seconds, cancel during the five-second countdown, then send a robbery report and show "Report received".
-6. **Union portal** (second tab) — select **LEB-7788**, choose *Out of service*, write a note, read the commuter preview, press **Publish**, and switch back to the commuter tab: the alert banner is there and the vehicle is gone from the arrivals.
+6. **Union portal** (second tab) — select **LEB-7788**, choose *Out of service*, write a note, read the commuter preview, press **Publish**, and switch back to the commuter tab: the alert banner appears, the bus is marked with an X at its last position, and it is gone from arrivals.
 
-Optional extras: switch to **Urdu** (the whole layout flips to right-to-left), turn on **High contrast**, and turn on **Simulate connection loss** to show the last-known-position behaviour.
+Optional extras: switch to **Urdu** (the whole layout flips to right-to-left), turn on **Light mode** or **High contrast**, and turn on **Simulate connection loss** to show the last-known-position behaviour.
 
 ## 5. File map
 
@@ -74,9 +74,9 @@ prototype/
 │   ├── portal.js           fleet, status, calls, alerts, settings
 │   └── portal.css          desktop layout
 └── tests/
-    ├── engine.test.js      218 data/engine checks (Node)
-    ├── ui.test.html        49 browser checks of the real commuter app
-    ├── sync.test.html      15 browser checks of portal → commuter sync
+    ├── engine.test.js      221 data/engine checks (Node)
+    ├── ui.test.html        88 browser checks of the real commuter app
+    ├── sync.test.html      25 browser checks of portal → commuter sync
     └── run-tests.ps1       runs all three suites
 ```
 
@@ -103,7 +103,7 @@ Both apps read and write one `localStorage` key, `kta_ops_v1`:
   "vehicles": { "v_b13_1": { "status": "out_of_service", "delayMin": 0, "note": "…" } },
   "alerts":   [ { "routeId": "r_b13", "severity": "out_of_service", "message": "…" } ],
   "reports":  [ … ], "reviews": [ … ], "calls": { … },
-  "settings": { "lang": "en", "clockFactor": 4, "largeText": false, "contrast": false, "offline": false }
+  "settings": { "lang": "en", "clockFactor": 4, "largeText": false, "contrast": false, "lightMode": false, "offline": false }
 }
 ```
 
@@ -127,9 +127,12 @@ The log is stored under `kta_eval_v1` in `localStorage` and never leaves the mac
 | Demo clock speed 1× / 4× / 12× | More | Speeds up or slows the simulation so buses visibly move and ETAs count down |
 | Simulate connection loss | More | Freezes the simulation clock, keeps the last known positions, shows the age of the last update, and changes every "Live" badge to "Last known" |
 | Larger text | More | Scales type and row heights |
+| Light mode | More | Switches the commuter app and map to a light colour palette; the choice is saved |
 | High contrast (sunlight) | More | Raises contrast for outdoor use |
 | Evaluation mode | More | Turns on the task log |
 | Reset demo data | More | Clears alerts, reports, reviews and settings |
+
+The union portal's **SOS & complaints** section lists commuter reports. A complaint can optionally identify its bus; linked route number and vehicle plate appear with the report.
 
 ## 10. Tests
 
@@ -137,7 +140,7 @@ The log is stored under `kta_eval_v1` in `localStorage` and never leaves the mac
 powershell -ExecutionPolicy Bypass -File prototype\tests\run-tests.ps1
 ```
 
-- `engine.test.js` — 218 checks, pure Node, no browser.
+- `engine.test.js` — 221 checks, pure Node, no browser.
 - `ui.test.html` and `sync.test.html` — browser tests that drive the real app; the script starts a local server and runs them in headless Chrome. Open them manually in a browser if you prefer to watch them.
 
 ## 11. Known limitations

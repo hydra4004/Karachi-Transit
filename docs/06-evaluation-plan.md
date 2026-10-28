@@ -44,7 +44,7 @@ The Phase 2 prototype is evaluated against the four commuter tasks and one union
 
 > **T1.** Using the app, find the bus that goes from *Sea View* to *Gulshan-e-Hadeed*.
 > **T2.** Now track that bus and tell me when it will reach *PECHS*.
-> **T3.** Plan a trip from *Saddar Jinnah Post Office* to *Gulshan-e-Hadeed* and describe the steps to me.
+> **T3.** Plan a trip from *Saddar GPO* to *Gulshan-e-Hadeed* and describe the steps to me.
 > **T4.** You feel unsafe at this stop. Use the app to raise an emergency alert, then cancel it. Afterwards, tell me how you would report a robbery.
 
 **Close**

@@ -85,7 +85,12 @@
   function updateTabs() {
     var tabs = document.querySelectorAll('#tabbar button');
     var active = { route: 'routes', stop: 'map', safety: 'home', alerts: 'home' }[state.screen] || state.screen;
-    tabs.forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-tab') === active); });
+    tabs.forEach(function (b) {
+      var selected = b.getAttribute('data-tab') === active;
+      b.classList.toggle('active', selected);
+      if (selected) b.setAttribute('aria-current', 'page');
+      else b.removeAttribute('aria-current');
+    });
   }
 
   /* ------------------------------------------------------------------ toast */
@@ -110,9 +115,7 @@
   function renderHome() {
     renderHomeAlerts();
     renderHomePlaces();
-    renderHomeRecent();
     renderHomeNearby();
-    renderHomeRoutes();
     renderOfflineBanner();
   }
 
@@ -145,13 +148,6 @@
     host.innerHTML = KTA.data.PLACES.map(function (p) {
       return '<button class="chip" data-place="' + p.id + '">' + ICON('pin', 14) +
         esc(LANG === 'ur' ? p.ur : p.en) + '</button>';
-    }).join('');
-  }
-
-  function renderHomeRecent() {
-    var host = $id('homeRecent');
-    host.innerHTML = KTA.data.RECENT_SEARCHES.map(function (sid) {
-      return '<button class="chip" data-stop="' + sid + '">' + esc(stopName(sid)) + '</button>';
     }).join('');
   }
 
@@ -203,26 +199,6 @@
       '<span class="eta-main"><span class="num">' + (a.minutes < 0.7 ? esc(t('common.now')) : Math.round(a.minutes)) + '</span>' +
       '<span class="unit">' + (a.minutes < 0.7 ? '' : esc(t('common.min'))) + '</span></span>' +
       '</button>';
-  }
-
-  function renderHomeRoutes() {
-    var host = $id('homeRoutes');
-    var routes = KTA.data.ROUTES.slice(0, 4);
-    host.innerHTML = routes.map(function (r) {
-      var arr = KTA.sim.nextArrival(r.id, r.stopIds[0]);
-      return '<button class="routecard" data-route="' + r.id + '">' +
-        '<span class="routechip" style="background:' + routeChipColor(r) + '">' + esc(r.number) + '</span>' +
-        '<span class="rc-main"><span class="rc-name">' + esc(routeName(r)) + '</span>' +
-        '<span class="rc-sub">' + (r.type === 'bus' ? ICON('bus', 13) : ICON('rickshaw', 13)) +
-        esc(r.stopIds.length + ' ' + t('common.stops')) +
-        (r.track === 'live' ? ' · <span class="badge live">' + esc(t('eta.live')) + '</span>'
-          : ' · <span class="badge est">' + esc(t('eta.estimated')) + '</span>') +
-        '</span></span>' +
-        '<span class="rc-eta">' + (arr
-          ? '<span class="n">' + (arr.minutes < 0.7 ? '•' : Math.round(arr.minutes)) + '</span><span class="u">' + esc(t('common.min')) + '</span>'
-          : '<span class="n">—</span><span class="u">' + esc(t('common.stops')) + '</span>') + '</span>' +
-        '</button>';
-    }).join('');
   }
 
   function renderSearchResults(query) {
@@ -278,13 +254,31 @@
   function buildMapSvg() {
     var p = [];
     p.push('<rect class="map-background" x="0" y="0" width="1000" height="640"/>');
-    /* water */
-    p.push('<path class="map-water" d="M0 560 L120 512 L250 566 L206 640 L0 640 Z"/>');
+    p.push('<path class="map-water" d="M0 545 C95 535 128 502 205 518 C283 534 321 570 397 568 C469 567 513 535 581 544 L640 640 L0 640 Z"/>');
+    p.push('<path class="map-shore" d="M0 545 C95 535 128 502 205 518 C283 534 321 570 397 568 C469 567 513 535 581 544"/>');
     p.push('<text x="60" y="600" class="stop-label map-sea-label">Arabian Sea</text>');
+    p.push('<path class="map-park" d="M160 246 C175 228 202 230 215 247 C228 266 215 287 194 291 C173 295 155 276 160 246 Z"/>');
+    p.push('<path class="map-park" d="M250 359 C264 343 288 345 299 362 C310 380 298 399 279 402 C260 405 245 387 250 359 Z"/>');
+    var roads = [
+      'M8 382 C42 365 70 350 97 345 S170 292 218 240 S290 184 331 173 S420 230 488 284',
+      'M158 25 C175 70 148 105 151 141 S143 185 121 206 S90 278 97 345 S75 401 92 426',
+      'M8 376 C35 370 44 354 50 354 S76 371 97 345 S160 320 203 334 S230 302 197 295',
+      'M49 485 C63 462 80 441 92 426 S102 380 97 345',
+      'M90 210 C132 211 166 209 205 188 S267 180 282 202 S382 252 408 266',
+      'M145 529 C145 486 120 459 92 426 S100 380 97 345',
+      'M442 425 C470 365 488 330 488 284 S472 255 469 244'
+    ];
+    p.push('<g class="map-streets" aria-hidden="true">');
+    roads.forEach(function (path) {
+      p.push('<path class="map-road-edge" d="' + path + '"/><path class="map-road" d="' + path + '"/>');
+    });
+    p.push('<path class="map-grid" d="M82 255 L174 250 M133 296 L225 286 M76 455 L130 470 M245 220 L315 186 M420 330 L490 350"/>');
+    p.push('</g>');
     /* area labels */
-    var areas = [['Saddar', 470, 300], ['Clifton', 430, 430], ['PECHS', 640, 285], ['Bahadurabad', 630, 210],
-      ['University Rd', 660, 150], ['Gulshan-e-Hadeed', 730, 112], ['Korangi', 862, 305], ['Malir', 846, 455],
-      ['Nazimabad', 350, 236], ['North Karachi', 240, 135], ['Liaquatabad', 505, 196]];
+    var areas = [['Saddar', 72, 320], ['Clifton', 102, 458], ['PECHS', 208, 365], ['Bahadurabad', 216, 274],
+      ['University Rd', 292, 184], ['Federal B Area', 207, 174], ['Gulshan-e-Hadeed', 878, 347],
+      ['Korangi', 445, 454], ['Malir', 505, 270], ['Nazimabad', 76, 187], ['North Nazimabad', 166, 124],
+      ['Liaquatabad', 151, 252], ['Airport', 456, 225], ['Sea View', 28, 510]];
     areas.forEach(function (a) {
       p.push('<text x="' + a[1] + '" y="' + a[2] + '" class="stop-label area-label">' + a[0] + '</text>');
     });
@@ -296,7 +290,49 @@
     });
     /* stops — each stop and its label live in one group so the map filter
        can hide both together */
+    var mapLabels = {
+      st_chund: ['KPT Head Office', 'کے پی ٹی ہیڈ آفس'],
+      st_ned: ['NED', 'این ای ڈی'],
+      st_liaq: ['Liaquatabad', 'لیاقت آباد'],
+      st_gol: ['Gol Market', 'گول مارکیٹ'],
+      st_nazimabad: ['Nazimabad No. 4', 'ناظم آباد نمبر ۴'],
+      st_north: ['Five Star Chowrangi', 'فائیو اسٹار چورنگی'],
+      st_sf: ['Hasan Square', 'حسن اسکوائر'],
+      st_qai: ['Airport corridor', 'ایئرپورٹ کوریڈور'],
+      st_airport: ['Jinnah Airport', 'جناح ایئرپورٹ'],
+      st_pechs: ['PECHS Block 6', 'پی ای سی ایچ ایس بلاک ۶'],
+      st_bahadur: ['Bahadurabad', 'بہادرآباد'],
+      st_uni: ['NIPA Bus Stop', 'نیپا بس اسٹاپ'],
+      st_fedb: ['Federal B Area', 'فیڈرل بی ایریا'],
+      st_korangi: ['Korangi No. 4', 'کورنگی نمبر ۴'],
+      st_malir: ['Malir Halt', 'ملیر ہالٹ'],
+      st_ghanta: ['Merewether Tower', 'میری ویدر ٹاور'],
+      st_kmc: ['KMC Building', 'کے ایم سی بلڈنگ'],
+      st_seabreeze: ['Sea Breeze Centre', 'سی بریز سینٹر'],
+      st_askari: ['Do Darya', 'دو دریا'],
+      st_svr: ['Sea View Road', 'سی ویو روڈ'],
+      st_nipa: ['NIPA Chinchi', 'نیپا چنچی'],
+      st_peshwari: ['Peshawari Ice Cream', 'پشاوری آئس کریم'],
+      st_pechs2: ['PECHS Block 2', 'پی ای سی ایچ ایس بلاک ۲'],
+      st_bhattigate: ['Regal Chowk', 'ریگل چوک'],
+      st_newkhi: ['New Karachi area', 'نیو کراچی کا علاقہ']
+    };
+    var labelOffsets = {
+      st_jpo: [8, -9], st_empress: [8, -20], st_chund: [8, 14],
+      st_ghanta: [8, -9], st_kmc: [30, 30], st_seabreeze: [8, 14],
+      st_clifton: [-8, -10], st_askari: [8, -9], st_seaview: [8, -10],
+      st_svr: [-8, 16], st_uni: [-8, -10], st_nipa: [8, 16],
+      st_gulshan: [-8, -9], st_bahadur: [-8, -10], st_peshwari: [8, 15],
+      st_gol: [-8, -10], st_nazimabad: [8, 14], st_north: [8, -9],
+      st_newkhi: [8, 18], st_bhattigate: [-8, 16], st_pechs: [-8, -9],
+      st_pechs2: [8, 16], st_fedb: [-8, -10], st_malir: [8, 14],
+      st_sf: [8, -10], st_qai: [8, 15], st_airport: [8, -10],
+      st_korangi: [8, 14], st_liaq: [8, -9], st_ned: [8, -10]
+    };
     KTA.data.STOPS.forEach(function (s) {
+      var offset = labelOffsets[s.id] || [8, 3.5];
+      var mapLabel = mapLabels[s.id];
+      var label = mapLabel ? (LANG === 'ur' ? mapLabel[1] : mapLabel[0]) : stopName(s.id);
       p.push('<g class="stop-group" data-stop-group="' + s.id + '">');
       if (s.kind === 'informal') {
         p.push('<rect class="stop-dot" data-stop="' + s.id + '" x="' + (s.x - 5) + '" y="' + (s.y - 5) +
@@ -305,8 +341,9 @@
         p.push('<circle class="stop-dot" data-stop="' + s.id + '" cx="' + s.x + '" cy="' + s.y +
           '" r="5.5" fill="#0f766e" stroke="#fff" tabindex="0" role="button" aria-label="' + esc(stopName(s.id)) + '"/>');
       }
-      p.push('<text x="' + (s.x + 8) + '" y="' + (s.y + 3.5) + '" class="stop-label">' +
-        esc(LANG === 'ur' ? s.ur : s.name) + '</text>');
+      p.push('<text x="' + (s.x + offset[0]) + '" y="' + (s.y + offset[1]) +
+        '" text-anchor="' + (offset[0] < 0 ? 'end' : 'start') + '" class="stop-label">' +
+        esc(label) + '</text>');
       p.push('</g>');
     });
     p.push('<g id="vehLayer"></g>');
@@ -383,17 +420,20 @@
       var focus = state.mapFocusRoute && state.mapFocusRoute !== v.routeId;
       var op = focus ? 0.18 : 1;
       var color = v.status === 'out_of_service' ? '#d92d20' : routeColor(r);
+      var vehicleAttrs = ' tabindex="0" role="button" aria-label="' +
+        esc(r.number + ' ' + (r.type === 'bus' ? 'bus' : 'chinchi') + ', ' + v.plate +
+          (v.status === 'out_of_service' ? ', out of service' : '')) + '"';
       if (v.status === 'out_of_service') {
-        html += '<g class="veh" data-veh="' + v.id + '" transform="translate(' + v.x + ',' + v.y + ')" opacity="' + op + '">' +
+        html += '<g class="veh" data-veh="' + v.id + '"' + vehicleAttrs + ' transform="translate(' + v.x + ',' + v.y + ')" opacity="' + op + '">' +
           '<circle r="9" fill="#fff" stroke="#d92d20" stroke-width="2.5"/>' +
           '<path d="M-4 -4 L4 4 M4 -4 L-4 4" stroke="#d92d20" stroke-width="2.5"/>' +
           '<text class="veh-label" x="0" y="-14" text-anchor="middle" fill="#d92d20">' + esc(r.number) + '</text></g>';
       } else if (r.type === 'bus') {
-        html += '<g class="veh" data-veh="' + v.id + '" transform="translate(' + v.x + ',' + v.y + ')" opacity="' + op + '">' +
+        html += '<g class="veh" data-veh="' + v.id + '"' + vehicleAttrs + ' transform="translate(' + v.x + ',' + v.y + ')" opacity="' + op + '">' +
           '<g transform="rotate(' + (v.heading) + ')"><rect x="-11" y="-7" width="22" height="14" rx="4" fill="' + color + '" stroke="#fff" stroke-width="2"/></g>' +
           '<text class="veh-label" x="0" y="-13" text-anchor="middle">' + esc(r.number) + '</text></g>';
       } else {
-        html += '<g class="veh" data-veh="' + v.id + '" transform="translate(' + v.x + ',' + v.y + ')" opacity="' + op + '">' +
+        html += '<g class="veh" data-veh="' + v.id + '"' + vehicleAttrs + ' transform="translate(' + v.x + ',' + v.y + ')" opacity="' + op + '">' +
           '<circle r="7.5" fill="' + color + '" stroke="#fff" stroke-width="2"/>' +
           '<text class="veh-label" x="0" y="-13" text-anchor="middle">' + esc(r.number) + '</text></g>';
       }
@@ -517,7 +557,16 @@
     }, { passive: false });
     svg.addEventListener('keydown', function (e) {
       var stopEl = e.target.closest('[data-stop]');
-      if (!stopEl || (e.key !== 'Enter' && e.key !== ' ')) return;
+      var vehEl = e.target.closest('[data-veh]');
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      if (vehEl) {
+        e.preventDefault();
+        e.stopPropagation();
+        KTA.evalTool.log('tap', { target: 'map-veh:' + vehEl.getAttribute('data-veh') });
+        openVehicleSheet(vehEl.getAttribute('data-veh'));
+        return;
+      }
+      if (!stopEl) return;
       e.preventDefault();
       e.stopPropagation();
       var stopId = stopEl.getAttribute('data-stop');
@@ -692,6 +741,13 @@
       '<input class="input" id="rbSubject" name="subject" autocomplete="off" required></div>' +
       '<div class="field"><label for="rbDesc">' + esc(t('safety.desc')) + '</label>' +
       '<textarea class="input" id="rbDesc" name="description" rows="3" required></textarea></div>' +
+      '<div class="field"><label for="rbVehicle">' + esc(t('safety.vehicle')) + '</label>' +
+      '<select class="input" id="rbVehicle" name="vehicleId"><option value="">—</option>' +
+      KTA.data.VEHICLES.filter(function (v) { return routeById(v.routeId).type === 'bus'; }).map(function (v) {
+        var route = routeById(v.routeId);
+        return '<option value="' + esc(v.id) + '"' + (prefillVehicle === v.id ? ' selected' : '') + '>' +
+          esc(route.number + ' · ' + v.plate) + '</option>';
+      }).join('') + '</select></div>' +
       '<div class="field"><label for="rbEvidence">' + esc(t('safety.evidence')) + '</label>' +
       '<div class="attach-box"><input type="file" id="rbEvidence" name="evidence" accept="image/*" capture="environment" />' +
       '<div class="attach-meta" id="rbEvidenceMeta">No image attached</div></div></div>' +
@@ -707,8 +763,9 @@
         e.preventDefault();
         var file = evidenceInput.files && evidenceInput.files[0];
         var evidenceText = file ? file.name : '';
+        var selectedVehicle = sheet.querySelector('#rbVehicle').value || prefillVehicle || null;
         KTA.sim.submitReport({
-          type: 'robbery', vehicleId: prefillVehicle || null,
+          type: 'robbery', vehicleId: selectedVehicle,
           subject: sheet.querySelector('#rbSubject').value.trim(),
           description: sheet.querySelector('#rbDesc').value.trim(),
           evidence: evidenceText,
@@ -898,6 +955,7 @@
 
     $id('planFrom').textContent = state.planFrom ? stopName(state.planFrom) : t('plan.chooseMap');
     $id('planTo').textContent = state.planTo ? stopName(state.planTo) : t('plan.chooseMap');
+    $id('btnSwap').setAttribute('aria-label', t('plan.swap'));
 
     renderPlanResult();
   }
@@ -1086,31 +1144,27 @@
 
     html += '<div class="card"><div class="section-title" style="margin-top:0">' + esc(t('more.language')) + '</div>' +
       '<div class="chiprow">' +
-      '<button class="chip' + (s.lang === 'en' ? ' on' : '') + '" data-lang="en">' + esc(t('more.english')) + '</button>' +
-      '<button class="chip' + (s.lang === 'ur' ? ' on' : '') + '" data-lang="ur">' + esc(t('more.urdu')) + '</button>' +
+      '<button type="button" class="chip' + (s.lang === 'en' ? ' on' : '') + '" data-lang="en" aria-pressed="' + (s.lang === 'en') + '">' + esc(t('more.english')) + '</button>' +
+      '<button type="button" class="chip' + (s.lang === 'ur' ? ' on' : '') + '" data-lang="ur" aria-pressed="' + (s.lang === 'ur') + '">' + esc(t('more.urdu')) + '</button>' +
       '</div><div class="tiny muted" style="margin-top:8px">' + esc(t('app.name')) + '</div></div>';
 
     html += '<div class="card"><div class="section-title" style="margin-top:0">' + esc(t('more.access')) + '</div>' +
-      '<div class="switch' + (s.largeText ? ' on' : '') + '" data-setting="largeText"><span>' + esc(t('more.largeText')) + '</span><span class="track"></span></div>' +
-      '<div class="switch' + (s.contrast ? ' on' : '') + '" data-setting="contrast"><span>' + esc(t('more.contrast')) + '</span><span class="track"></span></div>' +
+      '<button type="button" class="switch' + (s.lightMode ? ' on' : '') + '" role="switch" aria-checked="' + !!s.lightMode + '" data-setting="lightMode"><span>' + esc(t('more.lightMode')) + '</span><span class="track"></span></button>' +
+      '<button type="button" class="switch' + (s.largeText ? ' on' : '') + '" role="switch" aria-checked="' + !!s.largeText + '" data-setting="largeText"><span>' + esc(t('more.largeText')) + '</span><span class="track"></span></button>' +
+      '<button type="button" class="switch' + (s.contrast ? ' on' : '') + '" role="switch" aria-checked="' + !!s.contrast + '" data-setting="contrast"><span>' + esc(t('more.contrast')) + '</span><span class="track"></span></button>' +
       '</div>';
-
-    html += '<div class="card"><div class="section-title" style="margin-top:0">' + esc(t('more.places')) + '</div>' +
-      '<div class="chiprow">' + KTA.data.PLACES.map(function (p) {
-        return '<button class="chip" data-stop="' + p.stopId + '">' + ICON('pin', 14) + esc(LANG === 'ur' ? p.ur : p.en) + '</button>';
-      }).join('') + '</div><div class="tiny muted" style="margin-top:8px">' + esc(t('more.placesNote')) + '</div></div>';
 
     html += '<div class="card"><div class="section-title" style="margin-top:0">' + esc(t('more.clock')) + '</div>' +
       '<div class="chiprow">' + [[1, '1×'], [4, '4×'], [12, '12×']].map(function (o) {
-        return '<button class="chip' + (s.clockFactor === o[0] ? ' on' : '') + '" data-clock="' + o[0] + '">' + o[1] + '</button>';
+        return '<button type="button" class="chip' + (s.clockFactor === o[0] ? ' on' : '') + '" data-clock="' + o[0] + '" aria-pressed="' + (s.clockFactor === o[0]) + '">' + o[1] + '</button>';
       }).join('') + '</div><div class="tiny muted" style="margin-top:8px">' + esc(t('more.clockNote')) + '</div></div>';
 
     html += '<div class="card"><div class="section-title" style="margin-top:0">' + esc(t('eta.offline')) + '</div>' +
-      '<div class="switch' + (s.offline ? ' on' : '') + '" data-setting="offline"><span>' + esc(t('more.offline')) + '</span><span class="track"></span></div>' +
+      '<button type="button" class="switch' + (s.offline ? ' on' : '') + '" role="switch" aria-checked="' + !!s.offline + '" data-setting="offline"><span>' + esc(t('more.offline')) + '</span><span class="track"></span></button>' +
       '<div class="tiny muted" style="margin-top:6px">' + esc(t('more.offlineNote')) + '</div></div>';
 
     html += '<div class="card"><div class="section-title" style="margin-top:0">' + esc(t('more.evalMode')) + '</div>' +
-      '<div class="switch' + (KTA.evalTool.isEnabled() ? ' on' : '') + '" data-setting="evalMode"><span>' + esc(t('more.evalMode')) + '</span><span class="track"></span></div>' +
+      '<button type="button" class="switch' + (KTA.evalTool.isEnabled() ? ' on' : '') + '" role="switch" aria-checked="' + KTA.evalTool.isEnabled() + '" data-setting="evalMode"><span>' + esc(t('more.evalMode')) + '</span><span class="track"></span></button>' +
       '<div class="tiny muted" style="margin-top:6px">' + esc(t('more.evalHint')) + '</div></div>';
 
     html += '<div class="card"><div class="section-title" style="margin-top:0">' + esc(t('more.about')) + '</div>' +
@@ -1142,7 +1196,7 @@
       ['plan', 'tab.plan', 'plan'], ['more', 'tab.more', 'more']
     ];
     $id('tabbar').innerHTML = tabs.map(function (x) {
-      return '<button data-tab="' + x[0] + '">' + ICON(x[2], 22) + '<span>' + esc(t(x[1])) + '</span></button>';
+      return '<button type="button" data-tab="' + x[0] + '">' + ICON(x[2], 22) + '<span>' + esc(t(x[1])) + '</span></button>';
     }).join('');
   }
 
@@ -1185,7 +1239,7 @@
   function refreshDynamic() {
     var sc = document.querySelector('.screen.active');
     var top = sc ? sc.scrollTop : 0;
-    if (state.screen === 'home') { renderHomeNearby(); renderHomeRoutes(); renderHomeAlerts(); renderOfflineBanner(); }
+    if (state.screen === 'home') { renderHomeNearby(); renderHomeAlerts(); renderOfflineBanner(); }
     if (state.screen === 'routes') renderRoutes();
     if (state.screen === 'route') renderRouteDetail();
     if (state.screen === 'stop') renderStopDetail();
@@ -1321,12 +1375,10 @@
 
     /* specific buttons */
     $id('btnLangQuick').addEventListener('click', function () { switchLang(LANG === 'en' ? 'ur' : 'en'); });
-    $id('btnSosTop').addEventListener('click', function () { go('safety'); });
     $id('qaPlan').addEventListener('click', function () { go('plan'); });
     $id('qaSos').addEventListener('click', function () { go('safety'); });
     $id('qaRobbery').addEventListener('click', function () { openRobberySheet(null); });
     $id('qaTrack').addEventListener('click', function () { go('map'); });
-    $id('linkAllRoutes').addEventListener('click', function () { go('routes'); });
     $id('btnRouteBack').addEventListener('click', back);
     $id('btnStopBack').addEventListener('click', back);
     $id('btnSafetyBack').addEventListener('click', back);
@@ -1381,6 +1433,7 @@
     LANG = KTA.i18n.setLang(l);
     KTA.i18n.apply();
     renderTabs();
+    updateTabs();
     renderCurrent();
     renderEvalPanel();
     if (state.screen === 'map') { $id('mapSvg').removeAttribute('data-built'); renderMap(); }
@@ -1406,9 +1459,14 @@
       return;
     }
     KTA.store.update(function (st) { st.settings[key] = !st.settings[key]; });
-    document.body.classList.toggle('large-text', !!KTA.store.read().settings.largeText);
-    document.body.classList.toggle('contrast', !!KTA.store.read().settings.contrast);
+    applyVisualSettings(KTA.store.read().settings);
     renderMore();
+  }
+
+  function applyVisualSettings(settings) {
+    document.body.classList.toggle('large-text', !!settings.largeText);
+    document.body.classList.toggle('contrast', !!settings.contrast);
+    document.body.classList.toggle('light-mode', !!settings.lightMode);
   }
 
   /* ============================================================== BOOT ===== */
@@ -1416,8 +1474,7 @@
     if (/embed=1/.test(window.location.search)) document.body.classList.add('embed');
     var settings = KTA.store.read().settings;
     LANG = KTA.i18n.setLang(settings.lang || 'en');
-    document.body.classList.toggle('large-text', !!settings.largeText);
-    document.body.classList.toggle('contrast', !!settings.contrast);
+    applyVisualSettings(settings);
     state.offline = !!settings.offline;
 
     /* real browser connectivity also puts the app in last-known mode (IR5) */
@@ -1435,7 +1492,6 @@
     });
 
     /* icons */
-    $id('btnSosTop').innerHTML = ICON('sos', 20);
     $id('searchIcon').innerHTML = ICON('search', 18);
     $id('searchIcon2').innerHTML = ICON('search', 18);
     $id('qiPlan').innerHTML = ICON('plan', 18);
@@ -1461,6 +1517,7 @@
 
     /* cross-tab sync from the union portal */
     KTA.store.onChange(function () {
+      applyVisualSettings(KTA.store.read().settings);
       renderCurrent();
       renderEvalPanel();
       if (state.screen === 'map') { renderMapBanner(); }

@@ -39,7 +39,7 @@ The project is a public transport app for Karachi commuters, made of a commuter 
 
 **How the two halves are one product.** The union portal is not a separate admin screen that the commuter never sees. It writes into the same store the commuter app reads, so a vehicle marked "out of service" by the union disappears from the arrival list and raises a route alert for the commuter within a second. That closed loop is the part of this project that answers Phase 1 finding F1 — commuters blame the union for wrong information, and the union has no way to correct it.
 
-**Prototype status.** The prototype is a working HTML/CSS/JavaScript application, not a clickable picture. It has 30 simulated stops, 8 routes, 14 vehicles, a live-updating map, a journey planner, the full safety flow, reviews, and a union portal whose updates reach the commuter app in real time. It has 282 automated checks (`prototype/tests/`).
+**Prototype status.** The prototype is a working HTML/CSS/JavaScript application, not a clickable picture. It has 30 simulated stops, 8 routes, 14 vehicles, a live-updating map, a journey planner, the full safety flow, reviews, and a union portal whose updates reach the commuter app in real time. It has 334 automated checks (`prototype/tests/`): 221 engine checks, 88 commuter UI checks, and 25 union-sync checks.
 
 ---
 
@@ -137,7 +137,7 @@ The commuter app has five bottom tabs, and the union portal has a sidebar of fou
 
 | Commuter tab | Contents | Union sidebar | Contents |
 | --- | --- | --- | --- |
-| **Home** | alerts, search, quick actions, saved places, recent searches, next arrivals, popular routes | **Fleet** | vehicle table, status panel, alert preview, commuter preview |
+| **Home** | alerts, search, quick actions, saved places, next arrivals | **Fleet** | vehicle table, status panel, alert preview, commuter preview |
 | **Map** | live vehicles, 8 route lines, 30 stop points, filter chips, pan/zoom | **Driver calls** | call log, acknowledge, log a call |
 | **Routes** | filter by bus/chinchi, search, 8 route cards | **Alerts** | published alert history |
 | **Plan** | from/to, swap, suggestions, journey step cards | **Settings** | union profile, demo clock, reset |
@@ -164,7 +164,7 @@ Each major design decision rests on one named usability principle. The complete 
 | Feedback | Tapping a stop highlights it on the map and shows a confirmation; a sent report shows a clear "Report received" screen | FR5, FR6 |
 | Error prevention | SOS needs a 2 second hold, then a 5 second cancel countdown; SOS and robbery report are separate buttons | IR3 |
 | User control and freedom | Cancel is always visible on the SOS countdown and on journey results | IR3 |
-| Recognition rather than recall | Recent searches, saved places and route numbers with colour chips replace typing every time | IR1 |
+| Recognition rather than recall | Saved-place shortcuts and searchable route/stop names reduce recall; the route list is not duplicated on Home | IR1 |
 | Reduce cognitive load | The journey planner shows one step per card (board, ride, get off) instead of a dense map of lines | IR6, FR4 |
 | Match between system and real world | Landmark names, photos and Urdu labels for chinchi stops | FR9 |
 | Consistency and standards | Same bus card, ETA format and colour for each route across Home, Map and Routes | FR1, FR3 |

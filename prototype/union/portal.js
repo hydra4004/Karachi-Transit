@@ -35,13 +35,16 @@
   var VIEWS = [
     { id: 'fleet', icon: 'bus', key: 'union.fleet' },
     { id: 'alerts', icon: 'alert', key: 'union.alerts' },
+    { id: 'reports', icon: 'flag', key: 'union.reports' },
     { id: 'settings', icon: 'user', key: 'union.settings' }
   ];
 
   /* ------------------------------------------------------------------ nav */
   function renderNav() {
     $id('sideNav').innerHTML = VIEWS.map(function (v) {
-      return '<button data-view="' + v.id + '" class="' + (state.view === v.id ? 'on' : '') + '">' +
+      var selected = state.view === v.id;
+      return '<button type="button" data-view="' + v.id + '" class="' + (selected ? 'on' : '') +
+        '"' + (selected ? ' aria-current="page"' : '') + '>' +
         ICON(v.icon, 18) + '<span>' + esc(t(v.key)) + '</span></button>';
     }).join('');
   }
@@ -49,12 +52,13 @@
   function show(view) {
     state.view = view;
     renderNav();
-    ['fleet', 'alerts', 'settings'].forEach(function (v) {
+    ['fleet', 'alerts', 'reports', 'settings'].forEach(function (v) {
       $id('view' + v.charAt(0).toUpperCase() + v.slice(1)).style.display = (v === view) ? '' : 'none';
     });
     var titles = {
       fleet: [t('union.fleet'), t('union.manualEdit')],
       alerts: [t('union.alerts'), t('union.published')],
+      reports: [t('union.reports'), t('union.reportsNote')],
       settings: [t('union.settings'), t('union.driversNote')]
     };
     $id('pageTitle').textContent = titles[view][0];
@@ -65,6 +69,7 @@
   function renderView() {
     if (state.view === 'fleet') renderFleet();
     if (state.view === 'alerts') renderAlerts();
+    if (state.view === 'reports') renderReports();
     if (state.view === 'settings') renderSettings();
     renderPreviewList();
   }
@@ -103,7 +108,9 @@
       var badge = v.status === 'out_of_service' ? '<span class="badge oos">' + esc(t('union.oos')) + '</span>'
         : (v.status === 'delayed' ? '<span class="badge est">' + esc(t('union.delayed')) + ' ' + v.delayMin + '′</span>'
           : '<span class="badge live">' + esc(t('union.running')) + '</span>');
-      return '<tr data-veh="' + v.base.id + '" class="' + (state.selected === v.base.id ? 'sel' : '') + '">' +
+      return '<tr data-veh="' + v.base.id + '" tabindex="0" aria-selected="' + (state.selected === v.base.id) +
+        '" aria-label="Edit vehicle ' + esc(v.base.plate) + ' on route ' + esc(v.route.number) + '" class="' +
+        (state.selected === v.base.id ? 'sel' : '') + '">' +
         '<td><span class="plate">' + esc(v.base.plate) + '</span><div class="cell-sub">' + esc(v.base.model) + '</div></td>' +
         '<td><span class="routechip" style="background:' + routeColor(v.route) + '">' + esc(v.route.number) + '</span>' +
         '<div class="cell-sub">' + esc(v.route.name) + '</div></td>' +
@@ -122,13 +129,20 @@
       '<div class="toolbar">' + filters.map(function (f) {
         return '<button class="chip' + (state.filter === f[0] ? ' on' : '') + '" data-filter="' + f[0] + '">' + esc(f[1]) + '</button>';
       }).join('') + '<span class="muted" style="margin-inline-start:auto">' + list.length + ' vehicles</span></div>' +
-      '<div class="split"><div class="panel" style="padding:6px 10px"><table class="grid">' +
-      '<thead><tr><th>' + esc(t('union.plate')) + '</th><th>' + esc(t('union.route')) + '</th><th>' + esc(t('union.driver')) + '</th><th>' + esc(t('union.status')) + '</th></tr></thead>' +
+      '<div class="split"><div class="panel" style="padding:6px 10px"><table class="grid" aria-label="' + esc(t('union.fleet')) + '">' +
+      '<thead><tr><th scope="col">' + esc(t('union.plate')) + '</th><th scope="col">' + esc(t('union.route')) + '</th><th scope="col">' + esc(t('union.driver')) + '</th><th scope="col">' + esc(t('union.status')) + '</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>' +
       '<div id="vehiclePanel">' + renderVehiclePanel() + '</div></div>';
 
     $id('viewFleet').querySelectorAll('[data-veh]').forEach(function (tr) {
       tr.addEventListener('click', function () { selectVehicle(tr.getAttribute('data-veh')); });
+      tr.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        selectVehicle(tr.getAttribute('data-veh'));
+        var status = $id('statusGroup');
+        if (status) status.querySelector('input').focus();
+      });
     });
     $id('viewFleet').querySelectorAll('[data-filter]').forEach(function (b) {
       b.addEventListener('click', function () { state.filter = b.getAttribute('data-filter'); renderFleet(); });
@@ -278,6 +292,34 @@
         '<div class="tiny muted" style="margin-top:6px">' + esc(a.plate || '') + ' · ' + mins + ' min ago</div>' +
         '</div>';
     }).join('') : '<div class="empty">' + esc(t('union.noAlerts')) + '</div>';
+  }
+
+  function renderReports() {
+    var reports = KTA.sim.reports().sort(function (a, b) { return b.at - a.at; });
+    $id('viewReports').innerHTML = reports.length ? reports.map(function (report) {
+      var vehicle = report.vehicleId && KTA.sim.vehicleById(report.vehicleId);
+      var route = vehicle ? routeById(vehicle.routeId) : null;
+      var routeNumber = report.routeNumber || (route && route.number);
+      var plate = report.plate || (vehicle && vehicle.plate);
+      var isSos = report.type === 'sos';
+      var busLabel = routeNumber
+        ? '<span class="routechip" style="background:' + (route ? routeColor(route) : '#2563eb') + '">' + esc(routeNumber) + '</span>' +
+          (plate ? ' <span class="plate">' + esc(plate) + '</span>' : '')
+        : '<span class="muted">' + esc(t('union.noBusLinked')) + '</span>';
+      return '<article class="panel report-card" data-report="' + esc(report.id || '') + '">' +
+        '<div class="row between"><div><span class="badge ' + (isSos ? 'oos' : 'info') + '">' +
+        esc(isSos ? t('union.sosReport') : t('union.complaint')) + '</span> ' +
+        (report.subject ? '<b>' + esc(report.subject) + '</b>' : '') + '</div>' +
+        '<span class="badge neutral">' + esc(report.status || 'received') + '</span></div>' +
+        '<div class="report-bus"><b>' + esc(t('union.associatedBus')) + ':</b> ' + busLabel + '</div>' +
+        (report.description ? '<p>' + esc(report.description) + '</p>' : '') +
+        (report.note ? '<p>' + esc(report.note) + '</p>' : '') +
+        '<div class="tiny muted">' +
+        (report.location && report.location.label ? esc(report.location.label) + ' · ' : '') +
+        (report.at ? esc(new Date(report.at).toLocaleString()) : '') +
+        (report.evidence ? ' · ' + esc(t('safety.evidence')) + ': ' + esc(report.evidence) : '') +
+        '</div></article>';
+    }).join('') : '<div class="empty">' + esc(t('union.noReports')) + '</div>';
   }
 
   /* ------------------------------------------------------------- settings */

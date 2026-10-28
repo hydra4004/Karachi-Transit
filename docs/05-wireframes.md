@@ -12,29 +12,22 @@ Legend: `[ ]` button · `( )` chip · `▭` text field · `▤` card · `●` st
 
 ```
 ┌──────────────────────────────┐
-│ Karachi Transit      EN/اردو ●│  ← app bar: language toggle, alerts, SOS
+│  Karachi Transit      EN/اردو  │  ← app bar: language toggle
 ├──────────────────────────────┤
+│  [ Plan ] [ Track ]           │  ← #qaPlan  #qaTrack
+│  [ SOS ]   [ Complaint ]      │  ← #qaSos   #qaRobbery
 │ ░░ alert banner (if any) ░░ │  ← #homeAlerts  (FR8)
 │                              │
 │  Where do you want to go?    │  ← #q  (search)
 │  ▭ Search a stop, route…     │
 │                              │
-│  [ Plan a trip ]             │  ← #qaPlan
-│  [ Track on map ]            │  ← #qaTrack
-│  [ SOS ]        [ Robbery ]  │  ← #qaSos  #qaRobbery
+│  Next arrivals              │  ← #homeNearby  (FR3, IR2)
+│  ▤ B13 · ●Live · 4 min       │
+│  ▤ B21 · ○Est  · 9 min       │
 │                              │
 │  Saved places               │  ← #homePlaces (recognition)
 │  ( Home ) ( Work ) ( Uni )   │
 │                              │
-│  Recent searches            │  ← #homeRecent
-│  ( Gulshan ) ( PECHS )       │
-│                              │
-│  Next arrivals              │  ← #homeNearby  (FR3, IR2)
-│  ▤ B13 · ●Live · 4 min  Sardar│
-│  ▤ B21 · ○Est  · 9 min  PECHS │
-│                              │
-│  Popular routes             │  ← #homeRoutes
-│  ▤ [B13] Gulshan–Sea View  4′│
 ├──────────────────────────────┤
 │  🏠Home  🗺Map  🚌Routes  🧭Plan  ☰More │
 └──────────────────────────────┘
@@ -94,7 +87,7 @@ Legend: `[ ]` button · `( )` chip · `▭` text field · `▤` card · `●` st
 ├──────────────────────────────┤
 │ ░░░░ banner: B21 delayed ░░░ │  ← #mapBanner
 │                              │
-│      North Karachi           │
+│      North Nazimabad         │
 │         ╱                    │
 │   ●──────────●               │  ← route polylines (.route-line)
 │  │      ╲    │               │
@@ -115,7 +108,7 @@ Legend: `[ ]` button · `( )` chip · `▭` text field · `▤` card · `●` st
 ```
 ┌──────────────────────────────┐
 │ ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ │  ← drag handle
-│  Ghanta Ghar (چنچی پوائنٹ)   │  ← stop name + Urdu
+│  Merewether Clock Tower      │  ← stop name + Urdu
 │  Landmark: clock tower       │  ← #sheet .landmark
 │  ░░░░░░░░░░░░░░░░░░░░░░░░░░  │  ← #sheet .landmark-svg  (FR9)
 │                              │
@@ -152,14 +145,14 @@ Legend: `[ ]` button · `( )` chip · `▭` text field · `▤` card · `●` st
 │ ←  Plan a trip               │
 ├──────────────────────────────┤
 │  From                        │
-│  ▭ Saddar Jinnah Post Office │  ← #planFrom
+│  ▭ Saddar GPO                │  ← #planFrom
 │  [⇅]                          │  ← #btnSwap
 │  To                           │
 │  ▭ Gulshan-e-Hadeed          │  ← #planTo
 │                              │
 │  Try one of these            │  ← #planSuggestions
 │  ( Sea View → Saddar )       │
-│  ( North Karachi → PECHS )   │
+│  ( North Nazimabad → PECHS ) │
 │  [ Find a journey ]          │  ← #qaPlan
 └──────────────────────────────┘
 ```
@@ -172,7 +165,7 @@ Legend: `[ ]` button · `( )` chip · `▭` text field · `▤` card · `●` st
 │  46 min · 1 change · Rs 40   │
 ├──────────────────────────────┤
 │ ▤ 1  BOARD  B13              │
-│   Saddar Jinnah Post Office  │
+│   Saddar GPO                 │
 │   → Metro Station            │
 │   "B13 is the bus that covers │
 │    Saddar → Metro Station in  │
@@ -284,11 +277,11 @@ Legend: `[ ]` button · `( )` chip · `▭` text field · `▤` card · `●` st
 
 ```
 ┌──────────────────────────────┐
-│ ←  Ghanta Ghar (چنچی پوائنٹ)  │
+│ ←  Merewether Clock Tower     │
 ├──────────────────────────────┤
 │  ░░░░░░░░░░░░░░░░░░░░░░░░░░  │  ← landmark illustration
-│  Landmark: Ghanta Ghar clock  │
-│  tower                       │
+│  Landmark: Merewether Clock   │
+│  Tower                       │
 │  Served by: C1, C2           │
 │  Next: [C1] Live 3 min        │
 └──────────────────────────────┘

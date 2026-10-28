@@ -2,7 +2,11 @@
  * Karachi Transit App — union operations portal (desktop prototype)
  * ==========================================================================*/
 
-body.portal-body { background: var(--bg); }
+body.portal-body {
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(84, 189, 139, .1), transparent 38%),
+    var(--bg);
+}
 
 .portal {
   display: grid;
@@ -12,6 +16,7 @@ body.portal-body { background: var(--bg); }
   align-items: start;
   max-width: 1680px;
   margin: 0 auto;
+  min-height: 100dvh;
 }
 
 /* sidebar --------------------------------------------------------------- */
@@ -19,7 +24,7 @@ body.portal-body { background: var(--bg); }
   background: var(--surface);
   color: var(--ink);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 18px;
   padding: 16px 12px;
   position: sticky;
   top: 18px;
@@ -35,11 +40,11 @@ body.portal-body { background: var(--bg); }
 .sidebar nav { display: flex; flex-direction: column; gap: 4px; }
 .sidebar nav button {
   display: flex; align-items: center; gap: 10px; width: 100%;
-  padding: 11px 12px; border: 0; border-radius: 10px; background: transparent;
+  padding: 11px 12px; border: 0; border-inline-start: 3px solid transparent; border-radius: 10px; background: transparent;
   color: var(--ink-2); cursor: pointer; font-size: var(--text-md); text-align: start; min-height: 44px;
 }
 .sidebar nav button:hover { background: var(--surface-2); }
-.sidebar nav button.on { background: var(--brand-soft); color: var(--brand-ink); font-weight: 600; }
+.sidebar nav button.on { background: var(--brand-soft); color: var(--brand-ink); border-inline-start-color: var(--brand); font-weight: 600; }
 .sidebar .side-note {
   margin-top: 18px; padding: 12px; border-radius: 8px; background: var(--surface-2);
   font-size: var(--text-sm); color: var(--ink-2); line-height: 1.5;
@@ -50,7 +55,7 @@ body.portal-body { background: var(--bg); }
 .content {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 18px;
   padding: 18px 20px 28px;
   box-shadow: var(--shadow);
   min-height: 0;
@@ -75,14 +80,15 @@ table.grid th {
 }
 table.grid td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 table.grid tr.sel td { background: var(--brand-soft); }
-table.grid tr:hover td { background: var(--surface-2); cursor: pointer; }
+table.grid tr[data-veh]:hover td { background: var(--surface-2); cursor: pointer; }
+table.grid tr[data-veh]:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 .cell-main { font-weight: 600; }
 .cell-sub { font-size: var(--text-sm); color: var(--ink-3); }
 .plate { font-family: Consolas, "Courier New", monospace; font-weight: 700; font-size: var(--text-base); }
 
 /* detail panel --------------------------------------------------------- */
 .split { display: grid; grid-template-columns: 1fr 340px; gap: 18px; align-items: start; }
-.panel { border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: var(--surface); }
+.panel { border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: var(--surface); }
 .panel h3 { margin: 0 0 10px; font-size: var(--text-lg); }
 .radiogroup { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .radiogroup label {
@@ -102,7 +108,7 @@ table.grid tr:hover td { background: var(--surface-2); cursor: pointer; }
 .preview {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 18px;
   padding: 14px;
   box-shadow: var(--shadow);
   position: sticky;
@@ -119,6 +125,10 @@ table.grid tr:hover td { background: var(--surface-2); cursor: pointer; }
 .pv-list { margin-top: 12px; font-size: var(--text-sm); }
 .pv-list .item { padding: 8px 0; border-bottom: 1px dashed var(--line); }
 .pv-list .item:last-child { border-bottom: 0; }
+.report-card { margin-bottom: 10px; }
+.report-card .report-bus { margin-top: 10px; }
+.report-card .report-bus { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.report-card p { margin: 10px 0 0; }
 
 @container (max-width: 720px) {
   .split { grid-template-columns: minmax(0, 1fr); }
@@ -139,6 +149,8 @@ table.grid tr:hover td { background: var(--surface-2); cursor: pointer; }
     width: 100%;
     min-width: 0;
   }
+  .sidebar nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .sidebar .side-note { margin-top: 12px; }
   .content {
     min-height: 0;
     overflow-x: auto;

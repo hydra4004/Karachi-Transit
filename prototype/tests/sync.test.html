@@ -37,13 +37,21 @@ function aclick(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click',
 
   ok(pqa('#viewFleet tbody tr').length === 14, 'portal lists all 14 vehicles');
   ok(pqa('[data-view="calls"]').length === 0, 'portal has no driver-calls section');
-  ok(pqa('#sideNav [data-view]').length === 3, 'portal nav has three sections: fleet, alerts, settings');
+  ok(pqa('#sideNav [data-view]').length === 4, 'portal nav includes fleet, alerts, reports, and settings');
   ok(!!pq('#sideNoteBody') && pq('#sideNoteBody').textContent.indexOf('phone') !== -1,
      'portal explains that drivers phone the union');
 
   /* --- union operator marks a vehicle out of service --- */
   var row = pqa('#viewFleet tbody tr').filter(function (tr) { return tr.textContent.indexOf('LEB-7788') !== -1; })[0];
   ok(!!row, 'found the bus to update by hand (LEB-7788)');
+  ok(row && row.tabIndex === 0 && row.getAttribute('aria-label').indexOf('LEB-7788') !== -1,
+    'fleet rows are labelled and keyboard focusable');
+  row.dispatchEvent(new portal.contentWindow.KeyboardEvent('keydown', {
+    key: 'Enter', bubbles: true, cancelable: true
+  }));
+  await sleep(200);
+  ok(!!pq('#publishBtn') && portal.contentDocument.activeElement === pq('#statusGroup input'),
+    'keyboard activation opens the editor and moves focus to the status controls');
   pclick(row);
   await sleep(300);
   ok(!!pq('#publishBtn'), 'vehicle status panel opens');
@@ -66,6 +74,42 @@ function aclick(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click',
   ok(!!banner && banner.textContent.length > 10, 'commuter home shows the union alert banner');
   ok(banner && banner.textContent.indexOf('out of service') !== -1, 'alert text reaches the commuter app');
   ok(banner && banner.textContent.indexOf('LEB-7788') !== -1, 'alert names the vehicle that is off the road');
+
+  var appKTA = app.contentWindow.KTA;
+  var stoppedVehicle = appKTA.data.VEHICLES.filter(function (v) { return v.plate === 'LEB-7788'; })[0];
+  var originalAppNow = app.contentWindow.Date.now;
+  var simulatedNow = originalAppNow();
+  app.contentWindow.Date.now = function () { return simulatedNow; };
+  var stoppedPosition = appKTA.sim.vehicleState(stoppedVehicle);
+  simulatedNow += 60000;
+  var stoppedPositionLater = appKTA.sim.vehicleState(stoppedVehicle);
+  app.contentWindow.Date.now = originalAppNow;
+  ok(!!appKTA.sim.opsFor(stoppedVehicle.id).frozenPosition, 'out-of-service status stores the vehicle position');
+  ok(stoppedPosition.x === stoppedPositionLater.x && stoppedPosition.y === stoppedPositionLater.y,
+    'out-of-service vehicle stays in its last position as time advances');
+
+  var mapTab = aqa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'map'; })[0];
+  aclick(mapTab);
+  await sleep(300);
+  var stoppedMarker = aq('#mapSvg .veh[data-veh="' + stoppedVehicle.id + '"]');
+  var markerTransform = stoppedMarker && stoppedMarker.getAttribute('transform');
+  await sleep(1300);
+  ok(!!markerTransform && stoppedMarker.getAttribute('transform') === markerTransform,
+    'out-of-service bus map marker remains at its last position through map refreshes');
+  var activeClockFactor = appKTA.store.read().settings.clockFactor;
+  appKTA.store.update(function (stored) {
+    delete stored.vehicles[stoppedVehicle.id].frozenPosition;
+  });
+  var migratedPosition = appKTA.sim.opsFor(stoppedVehicle.id).frozenPosition;
+  appKTA.store.update(function (stored) { stored.settings.clockFactor = 12; });
+  var migratedPositionAfterSpeedChange = appKTA.sim.vehicleState(stoppedVehicle);
+  ok(!!migratedPosition && migratedPositionAfterSpeedChange.x === migratedPosition.x &&
+    migratedPositionAfterSpeedChange.y === migratedPosition.y,
+    'legacy out-of-service records stay frozen when demo speed changes');
+  appKTA.store.update(function (stored) { stored.settings.clockFactor = activeClockFactor; });
+  var homeTab = aqa('#tabbar button').filter(function (b) { return b.getAttribute('data-tab') === 'home'; })[0];
+  aclick(homeTab);
+  await sleep(200);
 
   /* the affected vehicle must not be offered as an arrival any more */
   var stopsWithVehicle = aqa('#homeNearby .eta-card').filter(function (c) { return c.textContent.indexOf('LEB-7788') !== -1; });
@@ -97,6 +141,21 @@ function aclick(el) { el.dispatchEvent(new app.contentWindow.MouseEvent('click',
          'a hand-made driver change reaches the commuter app');
     }
   }
+
+  appKTA.sim.submitReport({
+    type: 'robbery', vehicleId: stoppedVehicle.id, subject: 'Bus complaint',
+    description: 'Issue reported on this bus.', location: { label: 'Saddar' }
+  });
+  appKTA.sim.submitReport({ type: 'sos', note: 'Emergency SOS', location: { label: 'Saddar' } });
+  pclick(pqa('#sideNav [data-view="reports"]')[0]);
+  await sleep(200);
+  ok(pqa('#viewReports [data-report]').length === 2, 'admin reports section lists SOS alerts and complaints');
+  ok(pq('#viewReports').textContent.indexOf('Bus complaint') !== -1 &&
+    pq('#viewReports').textContent.indexOf('B21') !== -1 &&
+    pq('#viewReports').textContent.indexOf('LEB-7788') !== -1,
+    'admin complaint shows its associated bus route number and plate');
+  ok(pq('#viewReports').textContent.indexOf('SOS alert') !== -1,
+    'admin reports section identifies submitted SOS alerts');
 
   results.push('');
   results.push(fails === 0 ? 'ALL PASS' : fails + ' FAILURES');
